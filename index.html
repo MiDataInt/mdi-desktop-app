@@ -7,6 +7,8 @@
     <link href="launcher.css" rel="stylesheet" />
   </head>
   <body class="skin-blue">
+
+    <!-- mimic the apps framework page layout -->
     <header class="main-header">
       <div class="logo">MDI</div>
       <nav class="navbar navbar-static-top" role="navigation"></nav>
@@ -20,80 +22,128 @@
     </div>
     <div class="content-wrapper">
 
+      <!-- save/load user-defined configurations, i.e., Presets, from localStorage -->
       <form name="presets">
         <table>
           <tr>
-            <td class="optionLabel"><strong>Preset</strong></td>
+            <td class="optionLabel">Preset</td>
             <td class="optionInput">
               <select name="preset" id="preset">
-                <option value="none">-</option>
-                <option value="mostRecent">Most Recent</option>
+                <option value="none" class="presetOption">-</option>
+                <option value="mostRecent" selected>Most Recent</option>
               </select>
             </td>
+          </tr>
+          <tr>
+            <td class="optionLabel">
+              <a id="savePreset" href="#">Save As</a>
+            </td>
             <td>
-              <a href="#">Save As...</a>
+              <input id="presetName" name="presetName" type="text" value="" placeholder="type a short, useful configuration name">
+              <a id="deletePreset" href="#">Delete</a>
             </td>
           </tr>
         </table>  
       </form>
-
       <hr>
 
+      <!-- server mode, i.e., where the mdi-apps-framework will run -->
       <form name="serverMode">
-        <p style="margin: 7px 0;"><strong>MDI Server Mode</strong></p>
-        <div>
-          <input type="radio" id="remote" name="mode" value="Remote" checked>
-          <label for="remote">Remote Server</label>
-          <input type="radio" id="node" name="mode" value="Node">
-          <label for="node">Cluster Node</label>
-          <input type="radio" id="local" name="mode" value="Local">
-          <label for="local">Local Computer</label>
-        </div>      
-      </form>
-
-      <hr>
-
-      <form id="remoteOptions" class="modeOptions">
         <table>
           <tr>
-            <td class="optionLabel"><strong>User</strong></td>
+            <td class="optionLabel">MDI Server Mode</td>
+            <td class="optionInput">
+              <div id="serverModes">
+                <input type="radio" id="remote" name="mode" value="Remote" checked>
+                <label for="remote">Remote Server</label>
+                <input type="radio" id="node" name="mode" value="Node">
+                <label for="node">Cluster Node</label>
+                <input type="radio" id="local" name="mode" value="Local">
+                <label for="local">Local Computer</label>
+              </div>  
+            </td>
+          </tr>
+        </table> 
+      </form>
+      <hr>
+
+      <!-- mode-specific options for remote servers -->
+      <form id="remoteOptions" data-mode="Remote" class="modeOptions">
+        <table>
+          <tr>
+            <td class="optionLabel">User</td>
             <td class="optionInput"><input name="user" type="text" value="" placeholder="e.g., johndoe"></td>
           </tr>
           <tr>
-            <td class="optionLabel"><strong>Server</strong></td>
+            <td class="optionLabel">Server</td>
             <td class="optionInput"><input name="server" type="text" value="" placeholder="e.g., greatlakes.arc-ts.umich.edu"></td>
           </tr>
           <tr>
-            <td class="optionLabel"><strong>R Load Command</strong></td>
+            <td class="optionLabel">R Load Command</td>
             <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
           </tr>
         </table>  
       </form>
-      <form id="universalOptions" class="universalOptions">
+
+      <!-- mode-specific options for cluster node servers -->
+      <form id="nodeOptions" data-mode="Node" class="modeOptions">
         <table>
           <tr>
-            <td class="optionLabel"><strong>MDI Directory</strong></td>
+            <td class="optionLabel">User</td>
+            <td class="optionInput"><input name="user" type="text" value="" placeholder="e.g., johndoe"></td>
+          </tr>
+          <tr>
+            <td class="optionLabel">Server</td>
+            <td class="optionInput"><input name="server" type="text" value="" placeholder="e.g., greatlakes.arc-ts.umich.edu"></td>
+          </tr>
+          <tr>
+            <td class="optionLabel">R Load Command</td>
+            <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
+          </tr>
+          <tr>
+            <td class="optionLabel">Account</td>
+            <td class="optionInput"><input name="account" type="text" value="" placeholder="e.g., piuniqname0"></td>
+          </tr>
+        </table>  
+      </form>
+
+      <!-- mode-specific options for local servers running on a desktop/laptop -->
+      <form id="localOptions" data-mode="Local" class="modeOptions">
+        <table>
+          <tr>
+            <td class="optionLabel">R Directory</td>
+            <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
+          </tr>
+        </table>  
+      </form>
+
+      <!-- universal, i.e, mode-independent configuration options -->
+      <form id="universalOptions" data-mode="universal" class="universalOptions">
+        <table>
+          <tr>
+            <td class="optionLabel">MDI Directory</td>
             <td class="optionInput"><input name="mdiDir" type="text" value="~/mdi" placeholder="e.g., ~/mdi"></td>
           </tr>
           <tr>
-            <td class="optionLabel"><strong>Shiny Port</strong></td>
-            <td class="optionInput"><input name="shinyPort" type="text" value="3838" placeholder="e.g., 3838"></td>
+            <td class="optionLabel">Shiny Port</td>
+            <td class="optionInput"><input name="shinyPort" type="text" value="3838" placeholder="e.g., 3838, range 1024-49151"></td>
           </tr>
           <tr>
-            <td class="optionLabel"><strong>Developer Mode</strong></td>
+            <td class="optionLabel">Developer Mode</td>
             <td class="optionInput"><input name="developer" type="checkbox" value="developer"></td>
           </tr>
         </table>   
       </form>
 
+      <!-- the main server action buttons -->
       <hr>
-      
       <div class="buttons">
         <button type="button">(Re)Install Server</button>
         <button type="button">Start Server</button>
         <button type="button">Launch Apps Framework</button>        
       </div>
 
+    <!-- finish up page html and scripts -->
     </div>
     <script src="./renderer.js"></script>
   </body>

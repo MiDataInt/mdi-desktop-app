@@ -1,3 +1,4 @@
+/* mimic the apps framework page layout */
 body {
     margin: 0;
     overflow: hidden;
@@ -48,32 +49,60 @@ body {
     padding: 5px 15px;
     font-size: 0.9em;
 }
+hr {
+    margin: 15px 0;
+}
+
+/* Presets */
+#deletePreset {
+    margin-left: 10px;
+}
+#presetName {
+    width: 257px; 
+    padding: 3px;
+}
+a {
+    text-decoration: none;
+    color: blue;
+}
+a:hover {
+    color: #a00;
+}
+
+/* Server Mode */
+#serverModeLabel {
+    margin: 7px 0;
+}
+#serverModes {
+    font-size: 0.9em;
+}
 .optionLabel {
     width: 130px;
     text-align: right;
     padding-right: 10px;
+    font-weight: bold;
 }
 .optionInput input[type="text"], select {
-    width: 300px;
+    width: 325px;
     padding: 3px;
 }
 .optionInput input[type="checkbox"] {
     margin: 5px;
 }
-hr {
-    margin: 15px 0;
-}
+
+/* action buttons */
 .buttons button{
-    width: 450px;
+    width: 475px;
     height: 35px;
     margin: 5px;
     cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    border: 1px solid #888;
+    background-color: #dfdfdf;
 }
-a {
-    text-decoration: none;
-    margin-left: 10px;
-    color: blue;
-}
-a:hover {
-    color: #a00;
+.buttons button:hover {
+    background-color: #efefef;
+    box-shadow: 1px 1px 2px #666;
+    color: #00a;
 }

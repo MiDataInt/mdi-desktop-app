@@ -1,46 +1,93 @@
-const modeInputs = document.serverMode.mode;
-const modeForms = document.getElementsByClassName('modeOptions');
+// control available options based on server mode (note: js initialized in upside-down fashion)
+const mostRecent = "Most Recent"
+const modeForms = document.getElementsByClassName('modeOptions')
+const universalForm = document.getElementById('universalOptions')
+const handleInputChange = function(form, input){
+    let mode = form.dataset.mode
+    let name = input.name
+    let type = input.type
+    let value = input.type === "checkbox" ? input.checked : input.value
 
-let mode = null;
-let setServerMode = function(mode){
-    window.mdi.setTitle(mode)
-    window.mdi.log("HIT " + mode)
-    window.mdi.log(mode.toLowerCase() + "Options")
-    for (var i = 0; i < modeForms.length; i++) {
-        modeForms[i].style.display = 'none';
-    }
-    document.getElementById(mode.toLowerCase() + "Options").style.display = 'block';
+    // TODO working here!
+    // presets[mostRecent]
+    
+    console.log(mode + " " + name + " " + value)
 }
-setServerMode("Remote")
+for (const modeForm of modeForms){
+    modeForm.addEventListener('change', function(event) {
+        handleInputChange(this, event.target)
+    });
+}
+universalForm.addEventListener('change', function(event) {
+    handleInputChange(this, event.target)
+});
+const setServerMode = function(mode){
+    window.mdi.setTitle(mode)
+    for (const modeForm of modeForms) modeForm.style.display = 'none'
+    document.getElementById(mode.toLowerCase() + "Options").style.display = 'block'
+    for (const modeRadio of modeRadios) {
+        modeRadio.checked = modeRadio.value === mode
+    }
+}
 
-
-for (var i = 0; i < modeInputs.length; i++) {
-    modeInputs[i].addEventListener('change', function() {
+// server mode, i.e., where the mdi-apps-framework will run
+const modeRadios = document.serverMode.mode;
+for (const modeRadio of modeRadios) {
+    modeRadio.addEventListener('change', function() {
         setServerMode(this.value)
     });
 }
+const getServerMode = function(){
+    for (const modeRadio of modeRadios) {
+        if(modeRadio.checked) return modeRadio.value
+    }
+}
+
+// save/load user-defined configurations, i.e., Presets, from localStorage
+const presetSelect = document.getElementById('preset')
+const presetsKey = "mdi-launcher-presets"
+const nullPreset = {
+    mode: "Remote",
+    Remote: {
+        user: "",
+        server: "",
+        rLoadCommand: ""
+    },
+    universal: {
+        mdiDir: "xyz",
+        shinyPort: 3838,
+        developer: false
+    }
+}
+let presets =  localStorage.getItem(presetsKey)
+////////////////
+if(presets === null || true) { //////////////
+    presets = {
+        "-": nullPreset,
+        "Most Recent": nullPreset
+    }
+    localStorage.setItem(presetsKey, JSON.stringify(presets))
+} else {
+    presets = JSON.parse(presets)
+}
+const changeToPreset = function(presetName){
+    let preset = presets[presetName]
+    if(preset === undefined) preset = nullPreset
+    setServerMode(nullPreset.mode)
+    // TODO: update mode inputs
+}
+presetSelect.addEventListener('change', function() {
+    changeToPreset(this.value)
+});
+
+// on page load, show the last state of the launcher
+// whether saved as a named preset or not
+changeToPreset(mostRecent)
 
 
-// const setButton = document.getElementById('btn')
-// const titleInput = document.getElementById('title')
-// setButton.addEventListener('click', () => {
-//     const title = titleInput.value
-//     window.electronAPI.setTitle(title)
-// });
-
-// const sshButton = document.getElementById('ssh')
-// const password = document.getElementById('password')
-// const nClicksP = document.getElementById('nClicks')
-// let nClicks = 0;
-// sshButton.addEventListener('click', () => {
-//     console.log("sshButton click")
-//     nClicks += 1;
 //     nClicksP.innerText = nClicks
-//     window.ssh.tunnel(password.value)
-// });
 
 // const sshData = document.getElementById('ssh-data')
 // window.electronAPI.sshData((_event, value) => {
 //     sshData.innerText = sshData.innerText + value
 // })
-

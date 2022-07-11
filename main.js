@@ -1,9 +1,9 @@
+// load dependencies
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process');
 
-app.commandLine.appendSwitch('force_high_performance_gpu')
-
+// launch the app in the main renderer, i.e., BrowserWindow
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1400,
@@ -15,33 +15,36 @@ const createWindow = () => {
   })
 
   // IPC, renderer-to-main
+  // set the app title bar based on server mode
   ipcMain.on('set-title', (event, mode) => {
     const webContents = event.sender
     const win = BrowserWindow.fromWebContents(webContents)
     win.setTitle("MDI " + mode)
   })
-  ipcMain.on('start-server', (event) => {
-    const cmd = spawn('cmd.exe', ["/c", "start", "ssh", "-T", "wilsonte@greatlakes.arc-ts.umich.edu"]);
-  })
-  ipcMain.on('show-log', (event, message) => {
-    console.log(message);
+
+  // spawn the ssh terminal where the mdi-apps-framework server will run
+  ipcMain.on('server-action', (event, sshCommand) => {
+    let isWindows = process.platform.toLowerCase().startsWith("win")
+    if(isWindows){ // required to create a stable external window
+      spawn('cmd.exe', ["/c", "start", "ssh"].concat(sshCommand))
+    } else {
+      // TODO: handle linux/Mac does this work?
+      spawn('ssh', sshCommand)
+    }
   })
 
-  ipcMain.on('errorInWindow', function(event, data){
-    console.log(data)
-  });
-
-  mainWindow.loadFile('index.html')
-  mainWindow.webContents.openDevTools();
+  // load the page that allows users to configure their server
+  mainWindow.loadFile('index.html') 
+  mainWindow.webContents.openDevTools(); //////////////
 }
 
+// handle app flow control
 app.whenReady().then(() => {
   createWindow()
   app.on('activate', () => { // for Mac
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   })
 })
-
 app.on('window-all-closed', () => { // all except Mac
   if (process.platform !== 'darwin') app.quit()
 })
