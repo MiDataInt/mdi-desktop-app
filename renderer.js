@@ -4,14 +4,15 @@ const modeForms = document.getElementsByClassName('modeOptions')
 const universalForm = document.getElementById('universalOptions')
 const handleInputChange = function(form, input){
     let mode = form.dataset.mode
-    let name = input.name
-    let type = input.type
+    let option = input.name
     let value = input.type === "checkbox" ? input.checked : input.value
 
     // TODO working here!
-    // presets[mostRecent]
+    if(presets[mostRecent][mode] === undefined) presets[mostRecent][mode] = nullPreset[mode]
+    presets[mostRecent][mode][option] = value
+    localStorage.setItem(presetsKey, JSON.stringify(presets))
     
-    console.log(mode + " " + name + " " + value)
+    console.log(mode + " " + option + " " + value)
 }
 for (const modeForm of modeForms){
     modeForm.addEventListener('change', function(event) {
@@ -49,6 +50,16 @@ const presetsKey = "mdi-launcher-presets"
 const nullPreset = {
     mode: "Remote",
     Remote: {
+        user: "",
+        server: "",
+        rLoadCommand: ""
+    },
+    Node: {
+        user: "",
+        server: "",
+        rLoadCommand: ""
+    },
+    Local: {
         user: "",
         server: "",
         rLoadCommand: ""
