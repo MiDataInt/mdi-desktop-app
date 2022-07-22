@@ -1,9 +1,66 @@
-/* mimic the apps framework page layout */
+/* configure the launcer app vertical panels */
 body {
+    position: relative;
     margin: 0;
+    padding: 0;
     overflow: hidden;
     font-family: sans-serif; 
+    font-size: 0.9em;    
 }
+hr {
+    margin: 10px 0;
+}
+#server-panel, #viewer-panel {
+    position: absolute;   
+    top: 0px;  
+    left: 0px;   
+    height: 100vh;   
+    margin: 0;
+    overflow: hidden;    
+}
+#server-panel {
+    padding: 15px; 
+    width: 500px;
+    z-index: 0;
+}
+#viewer-panel {
+    position: relative;
+    margin-left: 530px;
+    width: 100vw;
+    z-index: 1;
+}
+#server-panel-toggle, #framework-panel{
+    position: absolute;
+    top: 0px;
+}
+#server-panel-toggle {
+    left: 0px;
+    border: 1px solid #888;
+    background-color: #dfdfdf;
+    line-height: 100vh;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer; 
+    padding: 0;
+    width: 20px;
+}
+#server-panel-toggle:hover {
+    background-color: #efefef;
+    box-shadow: 1px 1px 2px #666;
+    color: #00274C;
+}
+#framework-panel {
+    left: 20px;
+}
+#blank-apps-framework {
+    background-color: #fcfcfc;
+}
+#embedded-apps-framework {
+    background-color: #fcfcfc;
+    display: none;
+}
+
+/* mimic the apps framework page layout in the initial blank apps framework */
 .main-header {
     height: 50px;
     background-color: #00274C;
@@ -48,9 +105,6 @@ body {
     top: 50px;
     padding: 5px 15px;
     font-size: 0.9em;
-}
-hr {
-    margin: 15px 0;
 }
 
 /* Presets */

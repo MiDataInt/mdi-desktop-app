@@ -1,50 +1,94 @@
 // load dependencies
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const { spawn } = require('child_process');
+const pty = require('node-pty')
+const { spawn } = require('child_process')
+
+// activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
+// via a blocking ssh connection with a port tunnel
+const activateMdiRemoteTerminal = (sshArgs) => {
+  const ptyProcess = pty.spawn("ssh", ["-T", "wilsonte@greatlakes.arc-ts.umich.edu"], {
+    name: 'mdi-remote-terminal',
+    cols: 80,
+    rows: 30,
+    cwd: process.env.HOME,
+    env: process.env
+  })
+  ipcMain.on('xtermToPty', (event, data) => {
+    ptyProcess.write(data)
+  })
+  ptyProcess.onData(data => {
+    // TODO: monitor data for the URL of the server to launch in the iframe
+    mainWindow.webContents.send('ptyToXterm', data)
+  })
+}
+
+// launch a host terminal with a separate, interactive ssh session
+// this is external to the electron app itself and must be closed separately
+const spawnHostSshTerminal = (sshArgs) => {
+  let isWindows = process.platform.toLowerCase().startsWith("win")
+  if(isWindows){ // required to create a stable external window
+    spawn('cmd.exe', ["/c", "start", "ssh"].concat(sshArgs))
+  } else {
+    // TODO: handle linux/Mac does this work?
+    spawn('ssh', sshArgs)
+  }
+}
 
 // launch the app in the main renderer, i.e., BrowserWindow
-const createWindow = () => {
-  const mainWindow = new BrowserWindow({
+let mainWindow = null
+const createMainWindow = () => {
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'js/preload.js')
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    contextIsolation: true // the default, for clarity
   })
 
-  // IPC, renderer-to-main
   // set the app title bar based on server mode
-  ipcMain.on('set-title', (event, mode) => {
-    const webContents = event.sender
-    const win = BrowserWindow.fromWebContents(webContents)
-    win.setTitle("MDI " + mode)
+  ipcMain.on('setTitle', (event, mode) => {
+    BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode)
   })
 
-  // spawn the ssh terminal where the mdi-apps-framework server will run
-  ipcMain.on('server-action', (event, sshCommand) => {
-    let isWindows = process.platform.toLowerCase().startsWith("win")
-    if(isWindows){ // required to create a stable external window
-      spawn('cmd.exe', ["/c", "start", "ssh"].concat(sshCommand))
-    } else {
-      // TODO: handle linux/Mac does this work?
-      spawn('ssh', sshCommand)
-    }
+  // launch the ssh terminal processes
+  ipcMain.on('installServer', (event, sshArgs) => { // sshArgs is a pre-concatented string
+    activateMdiRemoteTerminal(sshArgs)
+  })
+  ipcMain.on('startServer', (event, sshArgs) => { // sshArgs is a pre-concatented string
+    activateMdiRemoteTerminal(sshArgs)
+  })
+  ipcMain.on('spawnTerminal', (event, sshArgs) => {
+    spawnHostSshTerminal(sshArgs)
   })
 
-  // load the page that allows users to configure their server
+  // load the page that allows users to configure and launch their server
   mainWindow.loadFile('index.html') 
   mainWindow.webContents.openDevTools(); //////////////
 }
 
-// handle app flow control
-app.whenReady().then(() => {
-  createWindow()
-  app.on('activate', () => { // for Mac
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+// app flow control, see:
+//  https://www.electronjs.org/docs/latest/tutorial/quick-start
+//  https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
+const gotTheLock = app.requestSingleInstanceLock({})
+if (!gotTheLock) {
+  app.quit() // allow at most a single instance of the app
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    if (mainWindow) { // focus an existent window
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
   })
-})
-app.on('window-all-closed', () => { // all except Mac
-  if (process.platform !== 'darwin') app.quit()
-})
+  app.whenReady().then(() => { // create a non-existent window
+    createMainWindow()
+    app.on('activate', () => { // for Mac
+      if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+    })
+  })
+  app.on('window-all-closed', () => { // all except Mac
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

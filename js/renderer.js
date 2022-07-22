@@ -1,4 +1,5 @@
-// control available options based on server mode (note: js initialized in upside-down fashion)
+// control available options based on server mode
+// note: options javascript initialized in upside-down fashion
 const mostRecent = "Most Recent"
 const modeForms = document.getElementsByClassName('modeOptions')
 const universalForm = document.getElementById('universalOptions')
@@ -96,9 +97,60 @@ presetSelect.addEventListener('change', function() {
 changeToPreset(mostRecent)
 
 
-//     nClicksP.innerText = nClicks
 
-// const sshData = document.getElementById('ssh-data')
-// window.electronAPI.sshData((_event, value) => {
-//     sshData.innerText = sshData.innerText + value
-// })
+// activate the server action buttons
+const startServerButton = document.getElementById('start-server')
+startServerButton.addEventListener('click', function(event) {
+    window.mdi.startServer("XX", {})
+})
+
+// initialize the xterm terminal windows and associated events
+const xterm = new Terminal();
+const fitAddon = new FitAddon.FitAddon();
+xterm.loadAddon(fitAddon);
+xterm.open(document.getElementById('terminal'));
+fitAddon.fit();
+xterm.onData((data) => { window.mdi.xtermToPty(data) })
+window.mdi.ptyToXterm((event, data) => { xterm.write(data) })
+
+// activate dynamic element sizing
+const viewerPanel = document.getElementById("viewer-panel") // sits on top of serverPanel, contains toggleButton and frameworkPanel
+const toggleButton = document.getElementById('server-panel-toggle')
+const frameworkPanel = document.getElementById('framework-panel')
+const toggleButtonWidth = 20
+const serverPanelWidth = 500
+const serverPanelPadding = 15
+const serverPanelPaddedWidth = serverPanelWidth + 2 * serverPanelPadding
+let serverPanelWorkingWidth = serverPanelPaddedWidth
+const resizePanels = function(){
+    viewerPanel.style.marginLeft = serverPanelWorkingWidth + "px"
+    frameworkPanel.style.width = (window.innerWidth - serverPanelWorkingWidth - toggleButtonWidth) + "px"
+}
+resizePanels()
+window.addEventListener('resize', (event) => resizePanels());
+
+// activate the button to toggle the server panel visibility
+toggleButton.addEventListener('click', function(event) {
+    let id = null
+    let target = null
+    let collapsing = serverPanelWorkingWidth > 0
+    clearInterval(id);
+    if(collapsing){
+        target = 0
+        inc = -1
+    } else {
+        target = serverPanelPaddedWidth
+        inc = 1
+    }
+    const animate = function() {
+        if (serverPanelWorkingWidth == target) {
+            clearInterval(id)
+        } else {
+            serverPanelWorkingWidth += inc * serverPanelPaddedWidth / 50, 0
+            serverPanelWorkingWidth = Math.min(Math.max(serverPanelWorkingWidth, 0), serverPanelPaddedWidth)
+            resizePanels()
+        }
+    }    
+    id = setInterval(animate, 0);
+    toggleButton.innerHTML = collapsing ? "&gt;" : "&lt;"
+});

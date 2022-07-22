@@ -1,14 +1,21 @@
 {
   "name": "mdi-electron",
   "version": "0.0.0",
-  "description": "Electron launcher app for the Michigan Data Interface apps framework",
+  "description": "Electron launcher for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron .",
+    "rebuild": "electron-rebuild -f -w node-pty"
   },
   "author": "Thomas E. Wilson",
   "license": "MIT",
+  "devDependencies": {
+    "electron": "^19.0.9",
+    "electron-rebuild": "^3.2.8"
+  },
   "dependencies": {
-    "electron": "^19.0.8"
+    "node-pty": "^0.10.1",
+    "xterm": "^4.19.0",
+    "xterm-addon-fit": "^0.5.0"
   }
 }
