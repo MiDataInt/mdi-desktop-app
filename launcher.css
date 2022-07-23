@@ -1,34 +1,46 @@
-/* configure the launcer app vertical panels */
+/* -----------------------------------------------------------
+configure the launcher app panel structure
+----------------------------------------------------------- */
 body {
     position: relative;
     margin: 0;
     padding: 0;
     overflow: hidden;
     font-family: sans-serif; 
-    font-size: 0.9em;    
-}
-hr {
-    margin: 10px 0;
-}
+    font-size: 15px;
+} 
+
+/* two panels in body, viewer-panel sits atop server-panel */
 #server-panel, #viewer-panel {
-    position: absolute;   
     top: 0px;  
     left: 0px;   
     height: 100vh;   
     margin: 0;
-    overflow: hidden;    
 }
 #server-panel {
+    position: absolute;    
     padding: 15px; 
-    width: 500px;
+    width: 611px;
     z-index: 0;
+    overflow: auto;     
 }
 #viewer-panel {
     position: relative;
-    margin-left: 530px;
+    margin-left: 632px;
     width: 100vw;
     z-index: 1;
+    overflow: hidden;
 }
+
+/* inputs and terminal panels in the server-panel */
+#server-config {
+    font-size: 14px;
+}
+#terminal {
+    border-left: 3px solid black;
+}
+
+/* show/hide button a framework content panel in the viewer-panel */
 #server-panel-toggle, #framework-panel{
     position: absolute;
     top: 0px;
@@ -46,21 +58,27 @@ hr {
 }
 #server-panel-toggle:hover {
     background-color: #efefef;
-    box-shadow: 1px 1px 2px #666;
-    color: #00274C;
+    color: #006;
 }
 #framework-panel {
     left: 20px;
-}
-#blank-apps-framework {
-    background-color: #fcfcfc;
-}
-#embedded-apps-framework {
-    background-color: #fcfcfc;
-    display: none;
+    overflow: auto;
 }
 
-/* mimic the apps framework page layout in the initial blank apps framework */
+/* two sequential framework content panels in the framework-panel */
+#electron-apps-framework { /* encoded by electron, initial help */
+    background-color: #fcfcfc;
+    z-index: 2;
+}
+#embedded-apps-framework { /* encoded by R Shiny, an iframe */
+    background-color: #fcfcfc;
+    display: none;
+    z-index: 3;
+}
+
+/* -----------------------------------------------------------
+mimic the apps framework page layout in the electron-apps-framework panel
+----------------------------------------------------------- */
 .main-header {
     height: 50px;
     background-color: #00274C;
@@ -107,12 +125,29 @@ hr {
     font-size: 0.9em;
 }
 
+/* -----------------------------------------------------------
+style to server-panel options inputs
+----------------------------------------------------------- */
+hr {
+    margin: 7px 0;
+}
+.action-hyperlink, .get-file-link {
+    font-size: 13px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+#toggleAdvanced {
+    margin-left: 200px;
+}
+#advancedOptions {
+    display: none;
+}
 /* Presets */
 #deletePreset {
     margin-left: 10px;
 }
 #presetName {
-    width: 257px; 
+    width: 335px; 
     padding: 3px;
 }
 a {
@@ -136,17 +171,25 @@ a:hover {
     padding-right: 10px;
     font-weight: bold;
 }
-.optionInput input[type="text"], select {
-    width: 325px;
+.optionInput input[type="text"], .optionInput input[type="number"], select {
+    width: 390px;
     padding: 3px;
+}
+select {
+    width: 400px; 
 }
 .optionInput input[type="checkbox"] {
     margin: 5px;
 }
+.fileOptionInput input[type="text"], .fileOptionInput input[type="number"]  {
+    width: 335px;
+    padding: 3px;
+}
 
-/* action buttons */
+/* server action buttons */
 .buttons button{
-    width: 475px;
+    display: inline-block;
+    width: 100px;
     height: 35px;
     margin: 5px;
     cursor: pointer;
@@ -158,5 +201,5 @@ a:hover {
 .buttons button:hover {
     background-color: #efefef;
     box-shadow: 1px 1px 2px #666;
-    color: #00a;
+    color: #006;
 }

@@ -1,0 +1,25 @@
+option,label,type,advanced,default,local,remote,node
+,,,,,,,
+MDI_DIRECTORY,Installation Directory,text,FALSE,~,required,required,required
+,,,,,,,
+R_LOAD_COMMAND,R Load Command,text,FALSE,NA,NA,optional,optional
+R_DIRECTORY,R Source Directory,text,FALSE,NA,optional,NA,NA
+,,,,,,,
+IDENTITY_FILE,Identity Key File,text,FALSE,NA,NA,optional,optional
+,,,,,,,
+JOB_TIME_MINUTES,Job Time Minutes,integer,FALSE,120,NA,NA,optional
+,,,,,,,
+SHINY_PORT,R Shiny Port,integer,FALSE,3838,required,required,required
+DEVELOPER,Developer Mode,checkbox,FALSE,FALSE,optional,optional,optional
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+HOST_DIRECTORY,Host Directory,text,TRUE,NA,optional,optional,optional
+DATA_DIRECTORY,Data Directory,text,TRUE,NA,optional,optional,optional
+,,,,,,,
+PROXY_PORT,Local Proxy Port,integer,TRUE,1080,NA,NA,required
+CPUS_PER_TASK,CPUs per Task,integer,TRUE,2,NA,NA,required
+MEM_PER_CPU,Memory per CPU,text,TRUE,4g,NA,NA,required

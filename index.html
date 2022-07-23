@@ -4,26 +4,25 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>MDI</title>
-    <link href="css/launcher.css" rel="stylesheet" />
+    <link href="launcher.css" rel="stylesheet" />
     <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
-    <script src="node_modules/xterm/lib/xterm.js"></script>
-    <script src="node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
   </head>
   <body>
-    <div id="launcher-panels">
 
-      <!-- configure, install, and connect to an MDI apps server -->
-      <div id="server-panel">
+    <!-- configure, install, and connect to an MDI apps server -->
+    <div id="server-panel">
+      <div id="server-config">
 
         <!-- save/load user-defined configurations, i.e., Presets, from localStorage -->
         <form name="presets">
           <table>
             <tr>
-              <td class="optionLabel">Preset</td>
+              <td class="optionLabel">Configuration</td>
               <td class="optionInput">
                 <select name="preset" id="preset">
-                  <option value="none" class="presetOption">-</option>
-                  <option value="mostRecent" selected>Most Recent</option>
+                  <option value="mostRecent" selected>Most Recent</option>                  
+                  <option value="defaults">Defaults</option>
+                  <option value="working">Working</option>
                 </select>
               </td>
             </tr>
@@ -33,7 +32,7 @@
               </td>
               <td>
                 <input id="presetName" name="presetName" type="text" value="" placeholder="type a short, useful configuration name">
-                <a id="deletePreset" href="#">Delete</a>
+                <a id="deletePreset" class="action-hyperlink" href="#">Delete</a>
               </td>
             </tr>
           </table>  
@@ -60,119 +59,173 @@
         </form>
         <hr>
 
-        <!-- mode-specific options for remote servers -->
-        <form id="remoteOptions" data-mode="Remote" class="modeOptions">
+        <!-- common/required mode-specific options for MDI servers -->
+        <form id="regularOptions" data-type="regular" class="optionsForm">
           <table>
-            <tr>
-              <td class="optionLabel">User</td>
+
+            <!-- remote server authorization -->
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">** Username</td>
               <td class="optionInput"><input name="user" type="text" value="" placeholder="e.g., johndoe"></td>
             </tr>
-            <tr>
-              <td class="optionLabel">Server</td>
-              <td class="optionInput"><input name="server" type="text" value="" placeholder="e.g., greatlakes.arc-ts.umich.edu"></td>
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">** Server Domain</td>
+              <td class="optionInput"><input name="serverDomain" type="text" value="greatlakes.arc-ts.umich.edu" placeholder="e.g., greatlakes.arc-ts.umich.edu"></td>
             </tr>
-            <tr>
-              <td class="optionLabel">R Load Command</td>
-              <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
+            <tr class="config-option Node">
+              <td class="optionLabel">** Cluster Account</td>
+              <td class="optionInput"><input name="clusterAccount" type="text" value="" placeholder="e.g., johndoe0"></td>
             </tr>
-          </table>  
-        </form>
+            <tr class="config-option Node">
+              <td class="optionLabel">Job Time Minutes</td>
+              <td class="optionInput"><input name="jobTimeMinutes" type="number" value="120" placeholder="e.g., 120 (in minutes)"></td>
+            </tr>
 
-        <!-- mode-specific options for cluster node servers -->
-        <form id="nodeOptions" data-mode="Node" class="modeOptions">
-          <table>
-            <tr>
-              <td class="optionLabel">User</td>
-              <td class="optionInput"><input name="user" type="text" value="" placeholder="e.g., johndoe"></td>
+            <!-- MDI directories -->
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">** MDI Directory</td>
+              <td class="optionInput"><input name="mdiDirectoryRemote" type="text" value="~/mdi" placeholder="e.g., ~/mdi"></td>
             </tr>
-            <tr>
-              <td class="optionLabel">Server</td>
-              <td class="optionInput"><input name="server" type="text" value="" placeholder="e.g., greatlakes.arc-ts.umich.edu"></td>
+            <tr class="config-option Local">
+              <td class="optionLabel">** MDI Directory</td>
+              <td class="fileOptionInput">
+                <input name="mdiDirectoryLocal" type="text" value="~/mdi" placeholder="e.g., ~/mdi">
+                <a class="get-file-link" data-type="directory">Search</a>
+              </td>
             </tr>
-            <tr>
-              <td class="optionLabel">R Load Command</td>
-              <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
-            </tr>
-            <tr>
-              <td class="optionLabel">Account</td>
-              <td class="optionInput"><input name="account" type="text" value="" placeholder="e.g., piuniqname0"></td>
-            </tr>
-          </table>  
-        </form>
 
-        <!-- mode-specific options for local servers running on a desktop/laptop -->
-        <form id="localOptions" data-mode="Local" class="modeOptions">
-          <table>
-            <tr>
+            <!-- R executable -->
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">R Load Command</td>
+              <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.2.0"></td>
+            </tr>
+            <tr class="config-option Local">
               <td class="optionLabel">R Directory</td>
-              <td class="optionInput"><input name="rLoadCommand" type="text" value="" placeholder="e.g., module load R/4.1.0"></td>
+              <td class="fileOptionInput">
+                <input name="rDirectory" type="text" value="" placeholder="e.g., C:\Program Files\R\R-4.2.0">
+                <a class="get-file-link">Search</a>
+              </td>
+            </tr>
+
+            <!-- MDI run options -->
+            <tr class="config-option Remote Node Local">
+              <td class="optionLabel">Shiny Port</td>
+              <td class="optionInput"><input name="shinyPort" type="number" value="3838" placeholder="e.g., 3838, range 1024-49151"></td>
+            </tr>
+            <tr class="config-option Remote Node Local">
+              <td class="optionLabel">Developer Mode</td>
+              <td class="optionInput">
+                <input name="developer" type="checkbox" value="developer">
+                <a id="toggleAdvanced" class="action-hyperlink" href="#">Show/Hide Advanced Options</a>
+              </td>
             </tr>
           </table>  
         </form>
 
-        <!-- universal, i.e, mode-independent configuration options -->
-        <form id="universalOptions" data-mode="universal" class="universalOptions">
+        <!-- advanced/defaulted mode-specific options for MDI servers -->
+        <form id="advancedOptions" data-type="advanced" class="optionsForm">
+          <hr>
           <table>
-            <tr>
-              <td class="optionLabel">MDI Directory</td>
-              <td class="optionInput"><input name="mdiDir" type="text" value="~/mdi" placeholder="e.g., ~/mdi"></td>
+
+            <!-- more remote server authorization -->
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">Identity Key File</td>
+              <td class="fileOptionInput">
+                <input name="identityFile" type="text" value="" placeholder="e.g., my-key.pem">
+                <a class="get-file-link" data-type="file">Search</a>
+              </td>
             </tr>
-            <tr>
-              <td class="optionLabel">Shiny Port</td>
-              <td class="optionInput"><input name="shinyPort" type="text" value="3838" placeholder="e.g., 3838, range 1024-49151"></td>
+
+            <!-- more MDI directories -->
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">** Data Directory</td>
+              <td class="optionInput"><input name="dataDirectoryRemote" type="text" value=""></td>
             </tr>
-            <tr>
-              <td class="optionLabel">Developer Mode</td>
-              <td class="optionInput"><input name="developer" type="checkbox" value="developer"></td>
+            <tr class="config-option Local">
+              <td class="optionLabel">** Data Directory</td>
+              <td class="fileOptionInput">
+                <input name="dataDirectoryLocal" type="text" value="">
+                <a class="get-file-link" data-type="directory">Search</a>
+              </td>
             </tr>
-          </table>   
+            <tr class="config-option Remote Node">
+              <td class="optionLabel">** Host Directory</td>
+              <td class="optionInput"><input name="hostDirectoryRemote" type="text" value=""></td>
+            </tr>
+            <tr class="config-option Local">
+              <td class="optionLabel">** Host Directory</td>
+              <td class="fileOptionInput">
+                <input name="hostDirectoryLocal" type="text" value="">
+                <a class="get-file-link" data-type="directory">Search</a>
+              </td>
+            </tr>
+
+            <!-- cluster node options -->
+            <tr class="config-option Node">
+              <td class="optionLabel">Proxy Port</td>
+              <td class="optionInput"><input name="proxyPort" type="number" value="1080" placeholder="e.g., 1080, range 1024-49151"></td>
+            </tr>
+            <tr class="config-option Node">
+              <td class="optionLabel">CPUs per Task</td>
+              <td class="optionInput"><input name="cpusPerTask" type="number" value="2" placeholder="e.g., 2 (recommended)""></td>
+            </tr>
+            <tr class="config-option Node">
+              <td class="optionLabel">Memory per CPU</td>
+              <td class="optionInput"><input name="memPerCpu" type="text" value="4g" placeholder="e.g., 4g"
+                "></td>
+            </tr>
+          </table>  
         </form>
         <hr>        
 
         <!-- the main server action buttons -->
         <div class="buttons">
-          <button type="button" id="install-server">(Re)Install Server</button>
-          <button type="button" id="start-server">Start Server</button>
-          <button type="button" id="launch-framework">Launch Apps Framework</button>        
+          <button type="button" id="ssh-connect">Connect</button>
+          <button type="button" id="ssh-disconnect">Disconnect</button>
+          <button type="button" id="install-server">(Re)Install</button>
+          <button type="button" id="run-server">Run</button>
+          <button type="button" id="spawn-terminal">New Terminal</button>     
         </div>
-
-        <!-- the in-app node-pty pseudo-terminal that runs the mdi-remote server -->
-        <div id="terminal"></div>
+        <hr>
       </div>
 
-      <!-- a tall vertical button for toggling the visibility of the server terminal -->      
-      <div id="viewer-panel">
-        <button id="server-panel-toggle" class="">
-          &lt;
-        </button>
+      <!-- the in-app node-pty pseudo-terminal that runs the mdi-remote server -->
+      <div id="terminal"></div>
+    </div>
 
-        <!-- a div with a blank mdi-apps-framework page mimic -->
-        <div id="framework-panel">
-          <div id="blank-apps-framework">
-            <header class="main-header">
-              <div class="logo">MDI</div>
-              <nav class="navbar navbar-static-top" role="navigation"></nav>
-            </header>
-            <div id="sidebarCollapsed" class="main-sidebar" data-collapsed="false">
-              <ul class="sidebar-menu">
-                <li class="sidebar-menu-active">
-                  Launcher
-                </li>
-              </ul>
-            </div>
-            <div class="content-wrapper">
-              <p>Use the panel on the far left to configure, install, and connect to your MDI apps server.</p>
-              <p>Use the tall vertical button to toggle the visibility of the server panel.</p>
-            </div>
-          </div>          
-        </div>
+    <!-- MDI-styled help page, then the frameworks contents -->
+    <div id="viewer-panel">
 
+      <!-- a tall vertical button for toggling the visibility of the server-panel --> 
+      <button id="server-panel-toggle" class="">&lt;</button>
+
+      <!-- a div with a blank mdi-apps-framework page mimic -->
+      <div id="framework-panel">
+        <div id="electron-apps-framework">
+          <header class="main-header">
+            <div class="logo">MDI</div>
+            <nav class="navbar navbar-static-top" role="navigation"></nav>
+          </header>
+          <div id="sidebarCollapsed" class="main-sidebar" data-collapsed="false">
+            <ul class="sidebar-menu">
+              <li class="sidebar-menu-active">
+                Launcher
+              </li>
+            </ul>
+          </div>
+          <div class="content-wrapper">
+            <p>Use the panel on the far left to configure, install, and connect to your MDI apps server.</p>
+            <p>Use the tall vertical button to toggle the visibility of the server panel.</p>
+          </div>
+        </div>  
+        
         <!-- an iframe to load the primary (often the only) apps framework page -->
-        <iframe id="embedded-apps-framework" src=""></iframe>        
+        <iframe id="embedded-apps-framework" src=""></iframe>             
       </div>
+    </div>
 
     <!-- finish up page html and scripts -->
-    </div>
-    <script src="./js/renderer.js"></script>
+    <script src="node_modules/xterm/lib/xterm.js"></script>
+    <script src="./renderer.js"></script>
   </body>
 </html>

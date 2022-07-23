@@ -4,7 +4,7 @@
   "description": "Electron launcher for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "electron . --ignore-gpu-blacklist",
     "rebuild": "electron-rebuild -f -w node-pty"
   },
   "author": "Thomas E. Wilson",
@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "node-pty": "^0.10.1",
-    "xterm": "^4.19.0",
-    "xterm-addon-fit": "^0.5.0"
+    "xterm": "^4.19.0"
   }
 }

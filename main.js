@@ -1,94 +1,138 @@
-// load dependencies
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const pty = require('node-pty')
-const { spawn } = require('child_process')
+/* -----------------------------------------------------------
+load dependencies
+----------------------------------------------------------- */
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const path = require('path');
+const pty = require('node-pty');
+const { spawn } = require('child_process');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
 
-// activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
-// via a blocking ssh connection with a port tunnel
-const activateMdiRemoteTerminal = (sshArgs) => {
-  const ptyProcess = pty.spawn("ssh", ["-T", "wilsonte@greatlakes.arc-ts.umich.edu"], {
+/* -----------------------------------------------------------
+enable local file system search for an identity file, R executable, MDI directory, etc.
+----------------------------------------------------------- */
+async function getLocalFile(event, type) {
+  const { canceled, filePaths } = await dialog.showOpenDialog({properties: [
+    type === "file" ? "openFile" : "openDirectory",
+    "showHiddenFiles"
+  ]});
+  if (canceled) {
+    return;
+  } else {
+    return filePaths[0];
+  }
+};
+ipcMain.handle('getLocalFile', getLocalFile);
+
+/* -----------------------------------------------------------
+activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
+----------------------------------------------------------- */
+const isWindows = process.platform.toLowerCase().startsWith("win");
+const shellCommand = isWindows ? 'powershell.exe' : 'bash';
+const activateAppSshTerminal = function(){
+
+  // open pseudo-terminal to the local computer's command shell (no ssh yet)
+  const ptyProcess = pty.spawn(shellCommand, [], {
     name: 'mdi-remote-terminal',
     cols: 80,
-    rows: 30,
-    cwd: process.env.HOME,
+    rows: 24,
+    cwd: app.getPath('home'),
     env: process.env
-  })
-  ipcMain.on('xtermToPty', (event, data) => {
-    ptyProcess.write(data)
-  })
+  });
+
+  // support dynamic terminal resizing
+  ipcMain.on('xtermResize', (event, size) => ptyProcess.resize(size.cols, size.rows));
+
+  // data flow between the back-end node-pty pseudo-terminal and the front-end xterm terminal window
+  ipcMain.on('xtermToPty',  (event, data) => ptyProcess.write(data));
   ptyProcess.onData(data => {
-    // TODO: monitor data for the URL of the server to launch in the iframe
-    mainWindow.webContents.send('ptyToXterm', data)
-  })
+    // TODO: monitor data for the URL of the server to launch in the iframe, etc.
+    mainWindow.webContents.send('ptyToXterm', data);
+  });
+
+  // establish/terminate an ssh connection to the remote server on user request
+  ipcMain.on('sshConnect', (event, sshCommand) => {
+    
+  });
+  ipcMain.on('sshDisconnect', (event) => {
+    ptyProcess.write("exit" + "\r");
+  });
+
+  // run MDI commands on the local or remote server on user request
+  ipcMain.on('installServer', (event, mdiCommand) => {
+
+  });  
+  ipcMain.on('runServer', (event, mdiCommand) => {
+
+  });  
 }
 
-// launch a host terminal with a separate, interactive ssh session
-// this is external to the electron app itself and must be closed separately
-const spawnHostSshTerminal = (sshArgs) => {
-  let isWindows = process.platform.toLowerCase().startsWith("win")
-  if(isWindows){ // required to create a stable external window
-    spawn('cmd.exe', ["/c", "start", "ssh"].concat(sshArgs))
-  } else {
-    // TODO: handle linux/Mac does this work?
-    spawn('ssh', sshArgs)
-  }
+/* -----------------------------------------------------------
+launch a host terminal external to the electron app with an interactive ssh session 
+----------------------------------------------------------- */
+const activateHostSshTerminal = function(){
+  ipcMain.on('spawnTerminal', (event, sshArgs) => {
+    if(isWindows){ // 'start' required to create a stable external window
+      spawn(shellCommand, ["/c", "start", "ssh"].concat(sshArgs));
+    } else {
+      // TODO: handle linux/Mac does this work?
+      // or maybe spawn(shellCommand, ["open", "ssh"].concat(sshArgs));
+      spawn('ssh', sshArgs);
+    }
+  })  
 }
 
-// launch the app in the main renderer, i.e., BrowserWindow
-let mainWindow = null
+/* -----------------------------------------------------------
+launch the Electron app in the main renderer, i.e., BrowserWindow
+----------------------------------------------------------- */
+let mainWindow = null;
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
-    width: 1400,
+    width: 1600,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'js/preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false, // security settings (defaults repeated here for clarity)
+      sandbox: true,
+      contextIsolation: true
     },
-    autoHideMenuBar: true,
-    contextIsolation: true // the default, for clarity
-  })
+    autoHideMenuBar: true
+  });
 
   // set the app title bar based on server mode
   ipcMain.on('setTitle', (event, mode) => {
-    BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode)
-  })
+    BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode);
+  });
 
-  // launch the ssh terminal processes
-  ipcMain.on('installServer', (event, sshArgs) => { // sshArgs is a pre-concatented string
-    activateMdiRemoteTerminal(sshArgs)
-  })
-  ipcMain.on('startServer', (event, sshArgs) => { // sshArgs is a pre-concatented string
-    activateMdiRemoteTerminal(sshArgs)
-  })
-  ipcMain.on('spawnTerminal', (event, sshArgs) => {
-    spawnHostSshTerminal(sshArgs)
-  })
+  // load the app page that allows users to configure and launch their server
+  mainWindow.loadFile('index.html');
+  mainWindow.webContents.openDevTools(); // <<< for developers >>>
 
-  // load the page that allows users to configure and launch their server
-  mainWindow.loadFile('index.html') 
-  mainWindow.webContents.openDevTools(); //////////////
-}
+  // activate the MDI server connections
+  setTimeout(activateAppSshTerminal, 50);
+  setTimeout(activateHostSshTerminal, 100);
+};
 
-// app flow control, see:
-//  https://www.electronjs.org/docs/latest/tutorial/quick-start
-//  https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
-const gotTheLock = app.requestSingleInstanceLock({})
-if (!gotTheLock) {
-  app.quit() // allow at most a single instance of the app
-} else {
+/* -----------------------------------------------------------
+Electron app windows and flow control, see:
+  https://www.electronjs.org/docs/latest/tutorial/quick-start
+  https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
+----------------------------------------------------------- */
+if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
-    if (mainWindow) { // focus an existent window
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.focus()
+    if (mainWindow) { // focus an existing window
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
-  })
+  });
   app.whenReady().then(() => { // create a non-existent window
-    createMainWindow()
+    createMainWindow();
     app.on('activate', () => { // for Mac
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
-    })
-  })
+    });
+  });
   app.on('window-all-closed', () => { // all except Mac
-    if (process.platform !== 'darwin') app.quit()
-  })
+    if (process.platform !== 'darwin') app.quit();
+  });
+} else {
+  app.quit();
 }
