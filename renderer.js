@@ -1,4 +1,8 @@
 /* -----------------------------------------------------------
+renderer.js has no access to Node or local system except through preload.js contextBridge
+----------------------------------------------------------- */
+
+/* -----------------------------------------------------------
 initialize the xterm terminal window and associated events and data flow
 ----------------------------------------------------------- */
 const terminalDiv = document.getElementById("terminal");
@@ -16,9 +20,9 @@ const xterm = new Terminal({
     cursorWidth: 2
 });
 xterm.open(terminalDiv);
-xterm.onResize((size) => window.mdi.xtermResize(size));
-xterm.onData((data) => window.mdi.xtermToPty(data));
-window.mdi.ptyToXterm((event, data) => { xterm.write(data) });
+xterm.onResize((size) => mdi.xtermResize(size));
+xterm.onData((data) => mdi.xtermToPty(data));
+mdi.ptyToXterm((event, data) => { xterm.write(data) });
 
 /* -----------------------------------------------------------
 activate dynamic element resizing
@@ -27,18 +31,18 @@ const serverConfigPanel = document.getElementById("server-config");
 const viewerPanel = document.getElementById("viewer-panel"); // on top of serverPanel, contains toggleButton and frameworkPanel
 const toggleButton = document.getElementById('server-panel-toggle');
 const frameworkPanel = document.getElementById('framework-panel');
-const toggleButtonWidth = 20;
+const toggleButtonWidth = 20; // as set in launcher.css
 const serverPanelPadding = 15;
-const serverPanelWidth = Math.floor((xtermCols + 6) * xtermCharWidth);
+const serverPanelWidth = Math.floor((xtermCols + 6) * xtermCharWidth); // determined emprically
 const serverPanelPaddedWidth = serverPanelWidth + 2 * serverPanelPadding;
 let serverPanelWorkingWidth = serverPanelPaddedWidth;
-const resizePanelWidths = function(){
+const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under frameworkPanel 
     viewerPanel.style.marginLeft = serverPanelWorkingWidth + "px";
     frameworkPanel.style.width = (window.innerWidth - serverPanelWorkingWidth - toggleButtonWidth) + "px";
 }
-const resizePanelHeights = function(){
-    let xtermHeight = window.innerHeight - serverConfigPanel.clientHeight - 2 * serverPanelPadding;
-    let xtermRows = Math.max(1, Math.floor(xtermHeight / xtermCharHeight));
+const resizePanelHeights = function(){ // control xterm terminal height based on viewport and options displays
+    const xtermHeight = window.innerHeight - serverConfigPanel.clientHeight - 2 * serverPanelPadding;
+    const xtermRows = Math.max(1, Math.floor(xtermHeight / xtermCharHeight));
     xterm.resize(xtermCols, xtermRows);    
 }
 const resizePanels = function(){
@@ -49,12 +53,12 @@ resizePanels();
 window.addEventListener('resize', (event) => resizePanels());
 
 /* -----------------------------------------------------------
-activate the button to toggle server-panel visibility
+activate the button to toggle server-panel visibility, with a bit of animation
 ----------------------------------------------------------- */
-toggleButton.addEventListener('click', function(event) {
+const toggleServerPanel = function(){
     let id = null;
     let target = null;
-    let collapsing = serverPanelWorkingWidth > 0;
+    const collapsing = serverPanelWorkingWidth > 0;
     clearInterval(id);
     if(collapsing){
         target = 0;
@@ -74,6 +78,9 @@ toggleButton.addEventListener('click', function(event) {
         }
     }    
     id = setInterval(animate, 0);
+}
+toggleButton.addEventListener('click', function(event) {
+    toggleServerPanel();
 });
 
 /* -----------------------------------------------------------
@@ -82,20 +89,48 @@ activate the MDI apps server action buttons
 const sshConnectButton    = document.getElementById('ssh-connect');
 const sshDisconnectButton = document.getElementById('ssh-disconnect');
 const installServerButton = document.getElementById('install-server');
-const runServerButton     = document.getElementById('run-server');
+const startServerButton   = document.getElementById('start-server');
+const stopServerButton    = document.getElementById('stop-server');
 const spawnTerminalButton = document.getElementById('spawn-terminal');
-const sshRequiredOptions = function(config, tunnel){
-    // ssh -t $IDENTITY_FILE -o "StrictHostKeyChecking no" -L $SHINY_PORT:127.0.0.1:$SHINY_PORT $USER@$SERVER_URL
-    // ssh -t $IDENTITY_FILE -o "StrictHostKeyChecking no" -D $PROXY_PORT $USER@$SERVER_URL
+const buttonsHr = document.getElementById('buttons-hr');
+let serverState = {
+    connected: false, // whether an ssh connection has been established
+    listening: false, // whether the mdi-apps-framework is running
+    nButtons: 0
+};
+const setButtonVisibility = function(button, isVisible){
+    button.style.display = isVisible ? "inline-block" : "none";
+    if(isVisible) serverState.nButtons++;
+}
+const setButtonsVisibility = function(){
+    const config = presets[presetSelect.value];
+    const isLocal = config.mode == "Local";
+    const isConnected = isLocal || serverState.connected;
+    const sshIsReady = checkActionReadiness("ssh", true).success;
+    const installIsReady = checkActionReadiness("mdi", "install").success;
+    const runIsReady = checkActionReadiness("ssh", "run").success;
+    const terminalIsReady = checkActionReadiness("ssh", false).success;
+    serverState.nButtons = 0;
+    setButtonVisibility(sshConnectButton,    !isLocal && sshIsReady && !serverState.connected);
+    setButtonVisibility(sshDisconnectButton, !isLocal && sshIsReady &&  serverState.connected);
+    setButtonVisibility(installServerButton, isConnected && installIsReady && !serverState.listening);
+    setButtonVisibility(startServerButton,   isConnected && runIsReady && !serverState.listening);
+    setButtonVisibility(stopServerButton,    isConnected && serverState.listening);
+    setButtonVisibility(spawnTerminalButton, terminalIsReady);
+    buttonsHr.style.display = serverState.nButtons > 0 ? "block" : "none";
+    resizePanelHeights();
+}
+const sshRequiredOptions = function(config, createTunnel){
+    const isLocal = config.mode === "Local";
     const isNode = config.mode === "Node";
     return {
         regular:{
-            user: true,
-            serverDomain: true,
-            shinyPort: tunnel && !isNode
+            user: !isLocal,
+            serverDomain: !isLocal,
+            shinyPort: createTunnel && !isNode
         },
         advanced:{        
-            proxyPort: tunnel && isNode
+            proxyPort: createTunnel && isNode
         }
     }    
 };
@@ -120,51 +155,59 @@ const mdiRequiredOptions = function(config, action){
         }
     }   
 }
-const getConfig = function(commandType, extra){
+checkActionReadiness = function(commandType, extra){
     const config = presets[presetSelect.value];
     const requiredOptions = commandType == "ssh" ? sshRequiredOptions(config, extra) : mdiRequiredOptions(config, extra);
     for(optionType of ["regular", "advanced"]){
         for(option of Object.keys(requiredOptions[optionType])){
             if(!requiredOptions[optionType][option]) continue;
-            if(!config.options[optionType][option]) {
-                window.mdi.showMessageBoxSync({
-                    message: "Option '" + option + "' is required for " + commandType + " actions.",
-                    type: "warning",
-                    title: "Missing option value"
-                })
-                return;
-            }
+            if(!config.options[optionType][option]) return {success: false, option: option};
         }
     }
-    return config;
+    return {success: true, config: config};
+}
+const getConfig = function(commandType, extra){
+    const check = checkActionReadiness(commandType, extra);
+    if(check.success) return check.config;
+    mdi.showMessageBoxSync({
+        message: "Option '" + check.option + "' is required for " + commandType + " actions.",
+        type: "warning",
+        title: "Missing option value"
+    });
 };
 sshConnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', true);
     if(!config) return;
-    window.mdi.sshConnect(config);
+    mdi.sshConnect(config);
     xterm.focus();
 });
 sshDisconnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', false);
     if(!config) return;
-    window.mdi.sshDisconnect(config);
+    mdi.sshDisconnect(config);
     xterm.focus();
 });
 installServerButton.addEventListener('click', function(event) {
     const config = getConfig('mdi', 'install');
     if(!config) return;
-    window.mdi.installServer(config);
+    mdi.installServer(config);
     xterm.focus();
 });
-runServerButton.addEventListener('click', function(event) {
+startServerButton.addEventListener('click', function(event) {
     const config = getConfig('mdi', 'run');
     if(!config) return;
-    window.mdi.runServer(config);
+    mdi.startServer(config);
+});
+stopServerButton.addEventListener('click', function(event) {
+    const config = getConfig('mdi', 'run');
+    if(!config) return;
+    mdi.stopServer(config);
+    xterm.focus();
 });
 spawnTerminalButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', false);
     if(!config) return;
-    window.mdi.spawnTerminal(config);
+    mdi.spawnTerminal(config);
 });
 
 /* -----------------------------------------------------------
@@ -174,49 +217,54 @@ activate dynamic server configuration inputs (initialized in upside-down fashion
 // use IPC to access the local file system
 const fileOptionInputs = document.getElementsByClassName('fileOptionInput');
 for (const fileOptionInput of fileOptionInputs) {
-    const nodes = fileOptionInput.childNodes;
-    nodes[3].addEventListener('click', async () => {
-        const filePath = await window.mdi.getLocalFile(nodes[3].dataset.type);
-        if(filePath) nodes[1].value = filePath;
+    const elements = fileOptionInput.children;
+    elements[1].addEventListener('click', async () => {
+        const filePath = await mdi.getLocalFile(elements[1].dataset.type);
+        if(filePath) elements[0].value = filePath;
+        elements[0].dispatchEvent(new Event('change', {bubbles: true}));
     });
 }
 
-// control available options based on server mode
-const optionForms = document.getElementsByClassName('optionsForm');
+// act on option value changes
+// edits are always accumulated in the "Working" configuration
+const optionForms   = document.getElementsByClassName('optionsForm');
 const configOptions = document.getElementsByClassName('config-option');
-const handleInputChange = function(form, input){
-    let type = form.dataset.type;
-    let option = input.name;
-    let value = input.type === "checkbox" ? input.checked : input.value;
-    if(presets.working.options       === undefined) presets.working.options      = structuredClone(nullPreset.options);
-    if(presets.working.options[type] === undefined) presets.working.options.type = structuredClone(nullPreset.options[type]);
-    presets.working.options[type][option] = value;
+const commitWorkingChanges = function(){
     localStorage.setItem(presetsKey, JSON.stringify(presets));
     presetSelect.value = "working";
+    setButtonsVisibility();    
 }
-for (const optionForm of optionForms){
+const handleInputChange = function(form, input){
+    const type = form.dataset.type; 
+    const option = input.name;
+    const value = input.type === "checkbox" ? input.checked : input.value.trim();
+    if(presets.working.options       === undefined) presets.working.options       = structuredClone(nullPreset.options);
+    if(presets.working.options[type] === undefined) presets.working.options[type] = structuredClone(nullPreset.options[type]);
+    presets.working.options[type][option] = value;
+    commitWorkingChanges();
+}
+for (const optionForm of optionForms){ // listen to the form to catch input change events by propagation
     optionForm.addEventListener('change', function(event){
         handleInputChange(this, event.target);
     });
 }
-const setServerMode = function(mode){
-    window.mdi.setTitle(mode)
+
+// control the available options based on server mode
+const setServerMode = function(mode, isInit){
+    mdi.setTitle(mode)
     for (const configOption of configOptions) {
         configOption.style.display = configOption.classList.contains(mode) ? "block" : "none";
     }
     for (const modeRadio of modeRadios) {
-        modeRadio.checked = modeRadio.value === mode
+        modeRadio.checked = modeRadio.value === mode;
     }
     resizePanelHeights();
     presets.working.mode = mode;
-    let connectButtonDisplay = mode === "Local" ? "none" : "inline-block";
-    sshConnectButton.style.display = connectButtonDisplay;
-    sshDisconnectButton.style.display = connectButtonDisplay;
-    localStorage.setItem(presetsKey, JSON.stringify(presets));
+    isInit ? setButtonsVisibility() : commitWorkingChanges();
 }
 
 // control available options based on show/hide advanced link
-const toggleAdvanced = document.getElementById('toggleAdvanced');
+const toggleAdvanced  = document.getElementById('toggleAdvanced');
 const advancedOptions = document.getElementById('advancedOptions');
 let advancedAreVisible = false;
 toggleAdvanced.addEventListener('click', function(){
@@ -228,13 +276,8 @@ toggleAdvanced.addEventListener('click', function(){
 const modeRadios = document.serverMode.mode;
 for (const modeRadio of modeRadios) {
     modeRadio.addEventListener('change', function(){
-        setServerMode(this.value)
+        setServerMode(this.value);
     });
-}
-const getServerMode = function(){
-    for (const modeRadio of modeRadios) {
-        if(modeRadio.checked) return modeRadio.value
-    }
 }
 
 // save/load user-defined configurations, i.e., Presets, from localStorage
@@ -279,15 +322,44 @@ if(!presets || true) { //////////////
 } else {
     presets = JSON.parse(presets);
 }
-const changeToPreset = function(presetName){
+const changeToPreset = function(presetName, isInit){
     let preset = presets[presetName];
     if(!preset) preset = structuredClone(nullPreset);
-    setServerMode(preset.mode);
+    setServerMode(preset.mode, isInit);
 };
 presetSelect.addEventListener('change', function(){ 
-    changeToPreset(this.value)
+    changeToPreset(this.value);
 });
 
 // on page load, show the last state of the launcher, whether saved as a named preset or not
-changeToPreset("mostRecent");
+changeToPreset("mostRecent", true);
 
+/* -----------------------------------------------------------
+respond to data stream watches and other pty state events
+----------------------------------------------------------- */
+const iframe = document.getElementById("embedded-apps-framework");
+mdi.connectedState((event, data) => { 
+    serverState.connected = data.connected;
+    setButtonsVisibility();
+});
+mdi.listeningState((event, match, data) => { 
+    serverState.listening = data.listening;
+    setButtonsVisibility();
+    if(serverState.listening){
+        iframe.src = match.match(/http:\/\/.+:\d+/);
+        iframe.style.display = "block";
+        if(serverPanelWorkingWidth > 0 && !data.developer) toggleServerPanel(); // by default, hide the server panel unless developing
+    } else {
+        iframe.src = "";
+        iframe.style.display = "none";
+        if(serverPanelWorkingWidth == 0) toggleServerPanel();
+    }
+});
+
+// TODO: save and delete configs from buttons; and save Most Recent when connected (or listening?)
+//       disable certain inputs when connected or listening
+//       node mode, hopefully can set Chromium proxy
+//       need better says to refresh the framework page (add a link to the electron header?)
+//       copy paste from terminal
+//       publish and distribute
+//       documentation
