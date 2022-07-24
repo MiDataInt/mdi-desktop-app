@@ -77,6 +77,97 @@ toggleButton.addEventListener('click', function(event) {
 });
 
 /* -----------------------------------------------------------
+activate the MDI apps server action buttons
+----------------------------------------------------------- */
+const sshConnectButton    = document.getElementById('ssh-connect');
+const sshDisconnectButton = document.getElementById('ssh-disconnect');
+const installServerButton = document.getElementById('install-server');
+const runServerButton     = document.getElementById('run-server');
+const spawnTerminalButton = document.getElementById('spawn-terminal');
+const sshRequiredOptions = function(config, tunnel){
+    // ssh -t $IDENTITY_FILE -o "StrictHostKeyChecking no" -L $SHINY_PORT:127.0.0.1:$SHINY_PORT $USER@$SERVER_URL
+    // ssh -t $IDENTITY_FILE -o "StrictHostKeyChecking no" -D $PROXY_PORT $USER@$SERVER_URL
+    const isNode = config.mode === "Node";
+    return {
+        regular:{
+            user: true,
+            serverDomain: true,
+            shinyPort: tunnel && !isNode
+        },
+        advanced:{        
+            proxyPort: tunnel && isNode
+        }
+    }    
+};
+const mdiRequiredOptions = function(config, action){
+    const isInstall = action === "install";    
+    const isLocal = config.mode === "Local";
+    const isNode  = config.mode === "Node";
+    const isNodeRun = !isInstall && isNode
+    return {
+        regular: {
+            serverDomain: !isInstall && !isLocal,
+            clusterAccount: isNodeRun,
+            jobTimeMinutes: isNodeRun,
+            mdiDirectoryRemote: !isLocal,
+            mdiDirectoryLocal: isLocal,
+            shinyPort: true 
+        },
+        advanced: {                 
+            proxyPort: isNodeRun,
+            cpusPerTask: isNodeRun,
+            memPerCpu: isNodeRun
+        }
+    }   
+}
+const getConfig = function(commandType, extra){
+    const config = presets[presetSelect.value];
+    const requiredOptions = commandType == "ssh" ? sshRequiredOptions(config, extra) : mdiRequiredOptions(config, extra);
+    for(optionType of ["regular", "advanced"]){
+        for(option of Object.keys(requiredOptions[optionType])){
+            if(!requiredOptions[optionType][option]) continue;
+            if(!config.options[optionType][option]) {
+                window.mdi.showMessageBoxSync({
+                    message: "Option '" + option + "' is required for " + commandType + " actions.",
+                    type: "warning",
+                    title: "Missing option value"
+                })
+                return;
+            }
+        }
+    }
+    return config;
+};
+sshConnectButton.addEventListener('click', function(event) {
+    const config = getConfig('ssh', true);
+    if(!config) return;
+    window.mdi.sshConnect(config);
+    xterm.focus();
+});
+sshDisconnectButton.addEventListener('click', function(event) {
+    const config = getConfig('ssh', false);
+    if(!config) return;
+    window.mdi.sshDisconnect(config);
+    xterm.focus();
+});
+installServerButton.addEventListener('click', function(event) {
+    const config = getConfig('mdi', 'install');
+    if(!config) return;
+    window.mdi.installServer(config);
+    xterm.focus();
+});
+runServerButton.addEventListener('click', function(event) {
+    const config = getConfig('mdi', 'run');
+    if(!config) return;
+    window.mdi.runServer(config);
+});
+spawnTerminalButton.addEventListener('click', function(event) {
+    const config = getConfig('ssh', false);
+    if(!config) return;
+    window.mdi.spawnTerminal(config);
+});
+
+/* -----------------------------------------------------------
 activate dynamic server configuration inputs (initialized in upside-down fashion)
 ----------------------------------------------------------- */
 
@@ -104,7 +195,9 @@ const handleInputChange = function(form, input){
     presetSelect.value = "working";
 }
 for (const optionForm of optionForms){
-    optionForm.addEventListener('change', (event) => handleInputChange(this, event.target));
+    optionForm.addEventListener('change', function(event){
+        handleInputChange(this, event.target);
+    });
 }
 const setServerMode = function(mode){
     window.mdi.setTitle(mode)
@@ -116,6 +209,9 @@ const setServerMode = function(mode){
     }
     resizePanelHeights();
     presets.working.mode = mode;
+    let connectButtonDisplay = mode === "Local" ? "none" : "inline-block";
+    sshConnectButton.style.display = connectButtonDisplay;
+    sshDisconnectButton.style.display = connectButtonDisplay;
     localStorage.setItem(presetsKey, JSON.stringify(presets));
 }
 
@@ -195,29 +291,3 @@ presetSelect.addEventListener('change', function(){
 // on page load, show the last state of the launcher, whether saved as a named preset or not
 changeToPreset("mostRecent");
 
-/* -----------------------------------------------------------
-activate the MDI apps server action buttons
------------------------------------------------------------ */
-const sshConnectButton    = document.getElementById('ssh-connect');
-const sshDisconnectButton = document.getElementById('ssh-disconnect');
-const installServerButton = document.getElementById('install-server');
-const runServerButton     = document.getElementById('run-server');
-const spawnTerminalButton = document.getElementById('spawn-terminal');
-sshConnectButton.addEventListener('click', function(event) {
-    window.mdi.sshConnect(mode, options);
-    xterm.focus();
-});
-sshDisconnectButton.addEventListener('click', function(event) {
-    window.mdi.sshDisconnect(mode);
-    xterm.focus();
-});
-installServerButton.addEventListener('click', function(event) {
-    window.mdi.installServer(mode, options);
-    xterm.focus();
-});
-runServerButton.addEventListener('click', function(event) {
-    window.mdi.runServer(mode, options);
-});
-spawnTerminalButton.addEventListener('click', function(event) {
-    window.mdi.spawnTerminal(mode, options);
-});

@@ -143,19 +143,12 @@ hr {
     display: none;
 }
 /* Presets */
-#deletePreset {
-    margin-left: 10px;
-}
-#presetName {
-    width: 335px; 
-    padding: 3px;
-}
 a {
     text-decoration: none;
     color: blue;
 }
 a:hover {
-    color: #a00;
+    color: #b00;
 }
 
 /* Server Mode */
@@ -176,7 +169,7 @@ a:hover {
     padding: 3px;
 }
 select {
-    width: 400px; 
+    width: 290px; 
 }
 .optionInput input[type="checkbox"] {
     margin: 5px;

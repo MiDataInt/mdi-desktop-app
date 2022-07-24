@@ -15,13 +15,17 @@ async function getLocalFile(event, type) {
     type === "file" ? "openFile" : "openDirectory",
     "showHiddenFiles"
   ]});
-  if (canceled) {
-    return;
-  } else {
-    return filePaths[0];
-  }
+  if (canceled) return;
+  return filePaths[0];
 };
 ipcMain.handle('getLocalFile', getLocalFile);
+
+/* -----------------------------------------------------------
+enable error and message dialogs
+----------------------------------------------------------- */
+ipcMain.on('showMessageBoxSync', (event, options) => {
+  dialog.showMessageBoxSync(BrowserWindow.fromWebContents(event.sender), options);
+});
 
 /* -----------------------------------------------------------
 activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
@@ -51,7 +55,7 @@ const activateAppSshTerminal = function(){
 
   // establish/terminate an ssh connection to the remote server on user request
   ipcMain.on('sshConnect', (event, sshCommand) => {
-    
+    ptyProcess.write(sshCommand.join(" ") + "\r");
   });
   ipcMain.on('sshDisconnect', (event) => {
     ptyProcess.write("exit" + "\r");
@@ -59,10 +63,11 @@ const activateAppSshTerminal = function(){
 
   // run MDI commands on the local or remote server on user request
   ipcMain.on('installServer', (event, mdiCommand) => {
-
+    ptyProcess.write(mdiCommand.join(" ") + "\r");
   });  
   ipcMain.on('runServer', (event, mdiCommand) => {
-
+    console.log(mdiCommand.join(" ") + "\r");
+    // TODO: activate URL watcher to load web page
   });  
 }
 
@@ -70,13 +75,13 @@ const activateAppSshTerminal = function(){
 launch a host terminal external to the electron app with an interactive ssh session 
 ----------------------------------------------------------- */
 const activateHostSshTerminal = function(){
-  ipcMain.on('spawnTerminal', (event, sshArgs) => {
+  ipcMain.on('spawnTerminal', (event, sshCommand) => {
     if(isWindows){ // 'start' required to create a stable external window
-      spawn(shellCommand, ["/c", "start", "ssh"].concat(sshArgs));
+      spawn(shellCommand, ["/c", "start"].concat(sshCommand));
     } else {
       // TODO: handle linux/Mac does this work?
       // or maybe spawn(shellCommand, ["open", "ssh"].concat(sshArgs));
-      spawn('ssh', sshArgs);
+      spawn('ssh', sshCommand);
     }
   })  
 }
