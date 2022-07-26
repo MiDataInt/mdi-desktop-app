@@ -7,11 +7,13 @@ This recommended use of inter-process communication (IPC) isolates any third par
 web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
 const path = require('path');
 const pty = require('node-pty');
 const { spawn } = require('child_process');
+const prompt = require('electron-prompt');
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
+app.commandLine.appendSwitch('disable-http-cache');
 
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
@@ -19,6 +21,7 @@ Electron app windows and flow control, see:
   https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
 ----------------------------------------------------------- */
 let mainWindow = null;
+let contentView = null;
 if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
     if (mainWindow) { // focus an existing window
@@ -42,10 +45,19 @@ if (app.requestSingleInstanceLock({})) { // allow at most a single instance of t
 /* -----------------------------------------------------------
 launch the Electron app in the main renderer, i.e., BrowserWindow
 ----------------------------------------------------------- */
+const devToolsMode = "detach"; // left, undocked, detach, null <<< for developers >>>
+const startWidth = 1400;
+const startHeight = 900;
+const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
+const serverPanelWidth = terminalWidth + 2 * 10;
+const toggleButtonWidth = 20 + 2 * 1; // set in css
+const contentsStartX = serverPanelWidth + toggleButtonWidth - 2; 
+const bodyBorderWidth = 1;
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
-    width: 1600,
-    height: 1000,
+    width: startWidth,
+    height: startHeight,
+    useContentSize: true, // thus, number above are the viewport dimensions
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, // security settings (defaults repeated here for clarity)
@@ -62,12 +74,54 @@ const createMainWindow = () => {
   });
 
   // load the app page that allows users to configure and launch their server
-  mainWindow.loadFile('index.html');
-  mainWindow.webContents.openDevTools(); // <<< for developers >>>
+  mainWindow.loadFile('index.html').then(() => {
+    createContentView();
+    if(devToolsMode) mainWindow.webContents.openDevTools({ mode: devToolsMode });    
+  });
 
-  // asynchronously activate the MDI server connections
-  setTimeout(activateAppSshTerminal, 100);
-  setTimeout(activateServerTerminal, 200);
+   // asynchronously activate the MDI server connections
+   setTimeout(activateAppSshTerminal, 100);
+   setTimeout(activateServerTerminal, 200);
+};
+
+/* -----------------------------------------------------------
+attach and control a BrowserView for showing help and the apps framework
+----------------------------------------------------------- */
+const createContentView = () => {
+  contentView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: false, // security settings (defaults repeated here for clarity)
+      sandbox: true,
+      contextIsolation: true
+    }
+  });
+  mainWindow.setBrowserView(contentView);
+  contentView.setAutoResize({
+      width: true,
+      height: true
+  });
+  contentView.setBounds({ 
+      x: contentsStartX,
+      width: startWidth - contentsStartX,        
+      y: bodyBorderWidth, 
+      height: startHeight - bodyBorderWidth
+  });
+  contentView.webContents.loadURL('https://midataint.github.io/docs/overview/'); // TODO: apps-launcher docs when available
+  ipcMain.on("resizePanelWidths", (event, viewPortWidth, serverPanelWidth) => {
+    const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
+    contentView.setBounds({ 
+        x: x, 
+        width: viewPortWidth - x,         
+        y: bodyBorderWidth, 
+        height: startHeight - bodyBorderWidth
+    });
+  });
+  ipcMain.on("showContent", (event, url, proxyRules) => {
+    if(!proxyRules) proxyRules = "direct://";
+    contentView.webContents.session.setProxy({proxyRules: proxyRules}).then(() => {
+      contentView.webContents.loadURL(url);
+    }).catch(console.error);
+  });
 };
 
 /* -----------------------------------------------------------
@@ -84,10 +138,16 @@ async function getLocalFile(event, type) {
 ipcMain.handle('getLocalFile', getLocalFile);
 
 /* -----------------------------------------------------------
-enable system error and message dialogs via Electron dialog API
+enable system error and message dialogs via Electron dialog API and electron-prompt
 ----------------------------------------------------------- */
 ipcMain.on('showMessageBoxSync', (event, options) => {
-  dialog.showMessageBoxSync(BrowserWindow.fromWebContents(event.sender), options);
+  const result = dialog.showMessageBoxSync(BrowserWindow.fromWebContents(event.sender), options);
+  if(options.mdiEvent) mainWindow.webContents.send(options.mdiEvent, result); 
+});
+ipcMain.on('showPrompt', (event, options) => {
+  prompt(options).then((result) => {
+    if(result) mainWindow.webContents.send(options.mdiEvent, result); 
+  }).catch(console.error);
 });
 
 /* -----------------------------------------------------------
@@ -95,7 +155,7 @@ activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
 ----------------------------------------------------------- */
 const isWindows = process.platform.toLowerCase().startsWith("win");
 const shellCommand = isWindows ? 'powershell.exe' : 'bash';
-let watch = {
+var watch = {
   buffer: "",
   for: "",
   event: null,
@@ -118,13 +178,15 @@ const activateAppSshTerminal = function(){
 
   // establish data flow between the back-end node-pty pseudo-terminal and the front-end xterm terminal window
   ipcMain.on('xtermToPty',  (event, data) => ptyProcess.write(data));
+  const lineClearRegex = /\x1b\[K\s+/; // https://notes.burke.libbey.me/ansi-escape-codes/
   ptyProcess.onData(data => {
-    if(watch.for) { // monitor the stream for signals of interest
+    if(watch.for && // monitor the stream for signals of interest
+      !data.match(lineClearRegex)) { // ignoring lines with the ANSI escape code that is a signa to clear an old line
       watch.buffer += data;
       const match = watch.buffer.match(watch.for);
       if(match){
         mainWindow.webContents.send(watch.event, match[0], watch.data);        
-        watch = {
+        watch = { // stop watching after the signal hits
           buffer: "",
           for: "",
           event: null,
@@ -149,7 +211,7 @@ const activateAppSshTerminal = function(){
   // install and run MDI commands on the local or remote server on user request
   // these actions are always required to launch the mdi-apps-framework
   ipcMain.on('installServer', (event, mdi) => {
-    if(mdi.mode == "Local"){ // parse local install here due to OS dependency
+    if(mdi.mode == "Local"){ // parse local command here due to OS dependency
       const rScript = getRScript(mdi);
       const commands = [
         [
@@ -180,7 +242,7 @@ const activateAppSshTerminal = function(){
         developer: mdi.opt.regular.developer
       }
     };
-    if(mdi.mode == "Local"){ // parse local install here due to OS dependency
+    if(mdi.mode == "Local"){ // parse local command here due to OS dependency
       const rScript = getRScript(mdi);
       const command = [
         rScript, "-e",
@@ -189,7 +251,7 @@ const activateAppSshTerminal = function(){
           "', hostDir = '", mdi.opt.hostDir, 
           "', dataDir = '", mdi.opt.dataDir, 
           "', port = ", mdi.opt.regular.shinyPort, 
-          ", debug = ", mdi.opt.developer,
+          ", debug = ", "TRUE", // mdi.opt.developer,
           ", developer = ", mdi.opt.developer, 
           ", browser = ", "FALSE", // if TRUE, an external Chrome window is spawned
           ")\"" // install = TRUE

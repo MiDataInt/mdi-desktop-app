@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; frame-src http://127.0.0.1:*/">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>MDI</title>
     <link href="launcher.css" rel="stylesheet" />
     <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
@@ -182,7 +182,7 @@
           <button type="button" id="install-server">(Re)Install</button>
           <button type="button" id="start-server">Start</button>
           <button type="button" id="stop-server">Stop</button>
-          <button type="button" id="spawn-terminal">Terminal</button>     
+          <a href="#" id="spawn-terminal">Terminal</a>     
         </div>
         <hr id="buttons-hr">
       </div>
@@ -191,41 +191,8 @@
       <div id="terminal"></div>
     </div>
 
-    <!-- MDI-styled help page, then the frameworks contents -->
-    <div id="viewer-panel">
-
-      <!-- a tall vertical button for toggling the visibility of the server-panel --> 
-      <button id="server-panel-toggle" class="">&lt;</button>
-
-      <!-- a div with a blank mdi-apps-framework page mimic -->
-      <div id="framework-panel">
-        <div id="electron-apps-framework">
-          <header class="main-header">
-            <div class="logo">MDI</div>
-            <nav class="navbar navbar-static-top" role="navigation"></nav>
-          </header>
-          <div id="sidebarCollapsed" class="main-sidebar" data-collapsed="false">
-            <ul class="sidebar-menu">
-              <li class="sidebar-menu-active">
-                Launcher
-              </li>
-            </ul>
-          </div>
-          <div class="content-wrapper">
-            <p>Use the panel on the far left to configure, install, and connect to your MDI apps server.</p>
-            <p>Use the tall vertical button to toggle the visibility of the server panel.</p>
-            <p>
-              See 
-              <a href="https://midataint.github.io/docs/overview/" target="mdi-docs">these documentation pages</a> 
-              for a complete description of all server configuration options.
-            </p>
-          </div>
-        </div>  
-        
-        <!-- an iframe to load the primary (often the only) apps framework page -->
-        <iframe id="embedded-apps-framework" src=""></iframe>             
-      </div>
-    </div>
+    <!-- a tall vertical button for toggling the visibility of the server-panel --> 
+    <button id="server-panel-toggle" class="">&lt;</button>
 
     <!-- finish up page html and load external scripts -->
     <script src="node_modules/xterm/lib/xterm.js"></script>

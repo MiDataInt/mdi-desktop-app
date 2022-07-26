@@ -8,8 +8,7 @@ initialize the xterm terminal window and associated events and data flow
 const terminalDiv = document.getElementById("terminal");
 const xtermCols = 80; // fixed
 let xtermRows = 24;   // dynamically resized
-const xtermCharWidth = 560 / 80; // determined empirically, could measure?
-const xtermCharHeight = 280 / 20;
+const xtermCharHeight = 280 / 20; // determined empirically
 const xterm = new Terminal({
     cols: xtermCols,
     rows: xtermRows,
@@ -28,17 +27,15 @@ mdi.ptyToXterm((event, data) => { xterm.write(data) });
 activate dynamic element resizing
 ----------------------------------------------------------- */
 const serverConfigPanel = document.getElementById("server-config");
-const viewerPanel = document.getElementById("viewer-panel"); // on top of serverPanel, contains toggleButton and frameworkPanel
 const toggleButton = document.getElementById('server-panel-toggle');
-const frameworkPanel = document.getElementById('framework-panel');
-const toggleButtonWidth = 20; // as set in launcher.css
-const serverPanelPadding = 15;
-const serverPanelWidth = Math.floor((xtermCols + 6) * xtermCharWidth); // determined emprically
-const serverPanelPaddedWidth = serverPanelWidth + 2 * serverPanelPadding;
-let serverPanelWorkingWidth = serverPanelPaddedWidth;
-const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under frameworkPanel 
-    viewerPanel.style.marginLeft = serverPanelWorkingWidth + "px";
-    frameworkPanel.style.width = (window.innerWidth - serverPanelWorkingWidth - toggleButtonWidth) + "px";
+const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
+const serverPanelPadding = 10;
+const serverPanelWidth = terminalWidth + 2 * serverPanelPadding;
+const toggleButtonWidth = 20 + 2 * 1; // set in css
+let serverPanelWorkingWidth = serverPanelWidth;
+const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under contentView 
+    mdi.resizePanelWidths(window.innerWidth, serverPanelWorkingWidth);
+    toggleButton.style.left = serverPanelWorkingWidth + "px";
 }
 const resizePanelHeights = function(){ // control xterm terminal height based on viewport and options displays
     const xtermHeight = window.innerHeight - serverConfigPanel.clientHeight - 2 * serverPanelPadding;
@@ -50,30 +47,31 @@ const resizePanels = function(){
     resizePanelHeights();
 }
 resizePanels();
-window.addEventListener('resize', (event) => resizePanels());
+window.addEventListener('resize', (event) => resizePanelHeights()); // resizePanelWidths not needed, handled by BrowserView
 
 /* -----------------------------------------------------------
 activate the button to toggle server-panel visibility, with a bit of animation
 ----------------------------------------------------------- */
 const toggleServerPanel = function(){
+    const collapsing = serverPanelWorkingWidth > 0;
     let id = null;
     let target = null;
-    const collapsing = serverPanelWorkingWidth > 0;
-    clearInterval(id);
+    let inc = null;
     if(collapsing){
         target = 0;
         inc = -1;
     } else {
-        target = serverPanelPaddedWidth;
+        target = serverPanelWidth;
         inc = 1;
     }
+    clearInterval(id);
     const animate = function() {
         if (serverPanelWorkingWidth == target) {
             clearInterval(id);
             toggleButton.innerHTML = collapsing ? "&gt;" : "&lt;";
         } else {
-            serverPanelWorkingWidth += inc * serverPanelPaddedWidth / 75; // animation speed set here
-            serverPanelWorkingWidth = Math.min(Math.max(serverPanelWorkingWidth, 0), serverPanelPaddedWidth);
+            serverPanelWorkingWidth += Math.floor(inc * serverPanelWidth / 50); // animation speed set here
+            serverPanelWorkingWidth = Math.min(Math.max(serverPanelWorkingWidth, 0), serverPanelWidth);
             resizePanelWidths();
         }
     }    
@@ -230,7 +228,7 @@ for (const fileOptionInput of fileOptionInputs) {
 const optionForms   = document.getElementsByClassName('optionsForm');
 const configOptions = document.getElementsByClassName('config-option');
 const commitWorkingChanges = function(){
-    localStorage.setItem(presetsKey, JSON.stringify(presets));
+    savePresets();
     presetSelect.value = "working";
     setButtonsVisibility();    
 }
@@ -250,7 +248,7 @@ for (const optionForm of optionForms){ // listen to the form to catch input chan
 }
 
 // control the available options based on server mode
-const setServerMode = function(mode, isInit){
+const setServerMode = function(mode, suppressWorking){
     mdi.setTitle(mode)
     for (const configOption of configOptions) {
         configOption.style.display = configOption.classList.contains(mode) ? "block" : "none";
@@ -258,9 +256,22 @@ const setServerMode = function(mode, isInit){
     for (const modeRadio of modeRadios) {
         modeRadio.checked = modeRadio.value === mode;
     }
+    const config = presets[presetSelect.value].options;
+    for (const optionForm of optionForms){ // update input values from the preset + mode
+        const optionType = optionForm.dataset.type;
+        for(const input of optionForm.elements){
+            const option = input.name;
+            const value = config[optionType][option];
+            if(input.type === "checkbox"){
+                input.checked = value;
+            } else {
+                input.value = value;
+            }
+        }
+    }
     resizePanelHeights();
     presets.working.mode = mode;
-    isInit ? setButtonsVisibility() : commitWorkingChanges();
+    suppressWorking ? setButtonsVisibility() : commitWorkingChanges();
 }
 
 // control available options based on show/hide advanced link
@@ -270,6 +281,7 @@ let advancedAreVisible = false;
 toggleAdvanced.addEventListener('click', function(){
     advancedAreVisible = !advancedAreVisible;
     advancedOptions.style.display = advancedAreVisible ? "block" : "none";
+    resizePanelHeights();
 });
 
 // server mode, i.e., where the mdi-apps-framework will run
@@ -283,6 +295,7 @@ for (const modeRadio of modeRadios) {
 // save/load user-defined configurations, i.e., Presets, from localStorage
 const presetSelect = document.getElementById('preset');
 const presetsKey = "mdi-launcher-presets";
+const restrictedPresets = ["defaults", "mostRecent", "working"];
 const nullPreset = {
     mode: "Remote",
     options: {
@@ -311,28 +324,95 @@ const nullPreset = {
     }
 };
 let presets = localStorage.getItem(presetsKey);
-////////////////
-if(!presets || true) { //////////////
+const savePresets = function(setMostRecent) {
+    if(setMostRecent){
+        const config = presets[presetSelect.value];
+        presets.mostRecent = structuredClone(config);
+    }
+    localStorage.setItem(presetsKey, JSON.stringify(presets));
+}
+if(!presets) {
     presets = {
         defaults:   structuredClone(nullPreset),
         mostRecent: structuredClone(nullPreset),
         working:    structuredClone(nullPreset)
     };
-    localStorage.setItem(presetsKey, JSON.stringify(presets));
+    savePresets();
 } else {
     presets = JSON.parse(presets);
 }
-const changeToPreset = function(presetName, isInit){
+const updatePresets = function(){
+    for(presetValue of Object.keys(presets)){
+        if(restrictedPresets.includes(presetValue)) continue;
+        const option = document.createElement("option");
+        option.value = presetValue;
+        option.text = presetValue;
+        presetSelect.add(option);
+        // TODO: finish this, need to ignore those already present, delete those not needed
+    }    
+}
+const changeToPreset = function(presetName){
     let preset = presets[presetName];
     if(!preset) preset = structuredClone(nullPreset);
-    setServerMode(preset.mode, isInit);
+    setServerMode(preset.mode, true);
 };
 presetSelect.addEventListener('change', function(){ 
     changeToPreset(this.value);
 });
 
 // on page load, show the last state of the launcher, whether saved as a named preset or not
-changeToPreset("mostRecent", true);
+updatePresets();
+changeToPreset("mostRecent");
+
+/* -----------------------------------------------------------
+enable user to save/delete named preset configurations
+----------------------------------------------------------- */
+const savePresetAs = document.getElementById("savePresetAs");
+const deletePreset = document.getElementById("deletePreset");
+savePresetAs.addEventListener("click", function(){
+    const current = presetSelect.value;
+    mdi.showPrompt({
+        title: 'Enter Configuration Name',
+        label: 'Please enter the desired configuration name:',
+        value: restrictedPresets.includes(current) ? "" : current,
+        buttonLabels: {
+            ok: "Save",
+            cancel: "Cancel"
+        },
+        inputAttrs: {
+            type: 'text'
+        },
+        height: 200,
+        width: 400,
+        alwaysOnTop: true,
+        mdiEvent: "configurationName"
+    });
+});
+mdi.configurationName((event, result) => {
+    presets[result] = presets[presetSelect.value];
+    savePresets();
+    updatePresets();
+    changeToPreset(result);
+});
+deletePreset.addEventListener("click", function(){
+    const current = presetSelect.value;
+    if(restrictedPresets.includes(current)) return;    
+    mdi.showMessageBoxSync({
+        message: "Please confirm deletion of configuration '" + current + "'. This cannot be undone.",
+        type: "warning",
+        title: "Confirm Deletion",
+        buttons: ["Cancel", "Delete"],
+        noLink: true,
+        mdiEvent: "confirmDelete"
+    });
+});
+mdi.confirmDelete((event, result) => {
+    if(!result) return; // user clicked cancel  
+    delete presets[presetSelect.value];
+    savePresets();
+    updatePresets();
+    changeToPreset("mostRecent");
+});
 
 /* -----------------------------------------------------------
 respond to data stream watches and other pty state events
@@ -341,17 +421,21 @@ const iframe = document.getElementById("embedded-apps-framework");
 mdi.connectedState((event, data) => { 
     serverState.connected = data.connected;
     setButtonsVisibility();
+    if(serverState.connected) savePresets(true);
 });
 mdi.listeningState((event, match, data) => { 
     serverState.listening = data.listening;
     setButtonsVisibility();
     if(serverState.listening){
-        iframe.src = match.match(/http:\/\/.+:\d+/);
-        iframe.style.display = "block";
+
+        savePresets(true);
+
+        const url = match.match(/http:\/\/.+:\d+/)[0];
+        mdi.showContent(url);
         if(serverPanelWorkingWidth > 0 && !data.developer) toggleServerPanel(); // by default, hide the server panel unless developing
+
     } else {
-        iframe.src = "";
-        iframe.style.display = "none";
+        mdi.showContent("https://midataint.github.io/docs/overview/");
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
     }
 });

@@ -12,11 +12,17 @@ contextBridge.exposeInMainWorld('mdi', {
   // dynamically set the app window title
   setTitle: (mode, connection) => ipcRenderer.send('setTitle', mode, connection),
 
-  // enable error and message dialogs via Electron dialog:showMessageBoxSync
+  // enable error and message dialogs via Electron dialog:showMessageBoxSync and electron-prompt
   showMessageBoxSync: (options) => ipcRenderer.send('showMessageBoxSync', options),
+  confirmDelete: (result) => ipcRenderer.on('confirmDelete', result),
+  showPrompt: (options) => ipcRenderer.send("showPrompt", options),
+  configurationName: (result) => ipcRenderer.on('configurationName', result),
 
-  // support dynamic terminal resizing
+  // support dynamic resizing
   xtermResize: (size) => ipcRenderer.send('xtermResize', size),
+  resizePanelWidths: (viewPortWidth, serverPanelWidth) => {
+    ipcRenderer.send('resizePanelWidths', viewPortWidth, serverPanelWidth);
+  },
 
   // enable local file system search for an identity file, MDI folder, etc.
   getLocalFile: (type) => ipcRenderer.invoke('getLocalFile', type),
@@ -59,6 +65,9 @@ contextBridge.exposeInMainWorld('mdi', {
   // respond to data stream watches and other pty state events
   connectedState: (data) => ipcRenderer.on('connectedState', data),
   listeningState: (match, data) => ipcRenderer.on('listeningState', match, data),
+
+  // load content into the content BrowserView
+  showContent: (url, proxyRules) => ipcRenderer.send('showContent', url, proxyRules)
 });
 
 /* -----------------------------------------------------------

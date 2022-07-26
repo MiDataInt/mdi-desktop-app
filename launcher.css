@@ -1,5 +1,6 @@
 /* -----------------------------------------------------------
 configure the launcher app panel structure
+three panels define the main page (server-panel, server-panel-toggle, and a BrowserView) 
 ----------------------------------------------------------- */
 body {
     position: relative;
@@ -8,126 +9,44 @@ body {
     overflow: hidden;
     font-family: sans-serif; 
     font-size: 15px;
+    border-top: 1px solid #888;
 } 
-
-/* two panels in body, viewer-panel sits atop server-panel */
-#server-panel, #viewer-panel {
-    top: 0px;  
-    left: 0px;   
-    height: 100vh;   
-    margin: 0;
+#server-panel, #server-panel-toggle {
+    position: absolute;
+    top: 0px;    
+    height: 100vh;
 }
 #server-panel {
-    position: absolute;    
-    padding: 15px; 
-    width: 611px;
-    z-index: 0;
-    overflow: auto;     
-}
-#viewer-panel {
-    position: relative;
-    margin-left: 632px;
-    width: 100vw;
-    z-index: 1;
-    overflow: hidden;
-}
-
-/* inputs and terminal panels in the server-panel */
-#server-config {
-    font-size: 14px;
-}
-#terminal {
-    border-left: 3px solid black;
-}
-
-/* show/hide button and framework content panel in the viewer-panel */
-#server-panel-toggle, #framework-panel{
-    position: absolute;
-    top: 0px;
-}
-#server-panel-toggle {
     left: 0px;
+    padding: 10px;
+}
+
+/* server-panel tall vertical show/hide button */
+#server-panel-toggle {
+    left: 604px;
     border: 1px solid #888;
+    border-top: none;
+    border-bottom: none;
     background-color: #dfdfdf;
     line-height: 100vh;
     text-align: center;
     font-weight: bold;
     cursor: pointer; 
     padding: 0;
-    width: 20px;
+    width: 20px;    
 }
 #server-panel-toggle:hover {
     background-color: #efefef;
     color: #006;
 }
-#framework-panel {
-    left: 20px;
-    overflow: auto;
-}
 
-/* two sequential framework content panels in the framework-panel */
-#electron-apps-framework { /* encoded by electron, initial help */
-    background-color: #fcfcfc;
-    z-index: 2;
+/* inputs and terminal panels in the leftmost server-panel */
+#server-config {
+    font-size: 14px;
 }
-#embedded-apps-framework { /* encoded by R Shiny, an iframe */
-    background-color: #fcfcfc;
-    display: none;
-    z-index: 3;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-}
-
-/* -----------------------------------------------------------
-mimic the apps framework page layout in the electron-apps-framework panel
------------------------------------------------------------ */
-.main-header {
-    height: 50px;
-    background-color: #00274C;
-}
-.navbar, .content-wrapper {
-    margin-left: 175px;
-}
-.logo {
-    width: 175px;
-    height: 50px;
-    max-height: 50px;
-    background-color: #00274C;
-    color: #FFCB05;
-    border-bottom: 1px solid #73712c;
-    border-right: 1px solid #73712c;
-    white-space: nowrap;
-    font-size: 1.25em;
-    padding: 0;   
-    line-height: 50px;
-    text-align: center;
-}
-.main-sidebar {
-    width: 175px;
-    height: 100vh;
-    background-color: #00274C;
-    margin-top: 1px;
-}
-.sidebar-menu {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-}
-.sidebar-menu-active {
-    color: #fbf2da;
-    border-left: 3px solid #FFCB05;
-    line-height: 44px;
-    font-size: 0.8em;
-    padding-left: 15px;
-}
-.content-wrapper {
-    position: absolute;
-    top: 50px;
-    padding: 5px 15px;
-    font-size: 0.9em;
+#terminal {
+    border-left: 3px solid black;
+    width: 581px; /* determined empirically */
 }
 
 /* -----------------------------------------------------------
