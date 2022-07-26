@@ -171,6 +171,14 @@
               <td class="optionInput"><input name="memPerCpu" type="text" value="4g" placeholder="e.g., 4g (recommended)"
                 "></td>
             </tr>
+
+            <!-- MDI run options -->
+            <tr class="config-option Local"> <!-- TODO: enable for remote mode in remote-server.R -->
+              <td class="optionLabel">Quick Start</td>
+              <td class="optionInput">
+                <input name="quickStart" type="checkbox" value="quickStart">
+              </td>
+            </tr>
           </table>  
         </form>
         <hr>        
@@ -182,7 +190,8 @@
           <button type="button" id="install-server">(Re)Install</button>
           <button type="button" id="start-server">Start</button>
           <button type="button" id="stop-server">Stop</button>
-          <a href="#" id="spawn-terminal">Terminal</a>     
+          <a href="#" id="spawn-terminal" class="terminal-hyperlink">Terminal</a>
+          <a href="#" id="copy-terminal-selected" class="terminal-hyperlink">Copy</a>
         </div>
         <hr id="buttons-hr">
       </div>

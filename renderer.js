@@ -5,7 +5,8 @@ renderer.js has no access to Node or local system except through preload.js cont
 /* -----------------------------------------------------------
 initialize the xterm terminal window and associated events and data flow
 ----------------------------------------------------------- */
-const terminalDiv = document.getElementById("terminal");
+const terminalDiv  = document.getElementById("terminal");
+const terminalCopy = document.getElementById("copy-terminal-selected");
 const xtermCols = 80; // fixed
 let xtermRows = 24;   // dynamically resized
 const xtermCharHeight = 280 / 20; // determined empirically
@@ -22,6 +23,14 @@ xterm.open(terminalDiv);
 xterm.onResize((size) => mdi.xtermResize(size));
 xterm.onData((data) => mdi.xtermToPty(data));
 mdi.ptyToXterm((event, data) => { xterm.write(data) });
+let xtermSelected = ""; // enable a dynamic prompt for user to copy selected text from the terminal
+xterm.onSelectionChange(() => {
+    xtermSelected = xterm.getSelection();
+    setButtonsVisibility();
+});
+terminalCopy.addEventListener("click", () => {
+    navigator.clipboard.writeText(xtermSelected);
+})
 
 /* -----------------------------------------------------------
 activate dynamic element resizing
@@ -115,6 +124,7 @@ const setButtonsVisibility = function(){
     setButtonVisibility(startServerButton,   isConnected && runIsReady && !serverState.listening);
     setButtonVisibility(stopServerButton,    isConnected && serverState.listening);
     setButtonVisibility(spawnTerminalButton, terminalIsReady);
+    setButtonVisibility(terminalCopy,        terminalIsReady && xtermSelected);
     buttonsHr.style.display = serverState.nButtons > 0 ? "block" : "none";
     resizePanelHeights();
 }
@@ -309,7 +319,7 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             rLoadCommand: "",
             rDirectory: "",
             shinyPort: 3838,
-            developer: false   
+            developer: false
         },
         advanced:{
             identityFile: "",            
@@ -319,7 +329,8 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             hostDirectoryLocal: "",
             proxyPort: 1080,
             cpusPerTask: 2,
-            memPerCpu: "4g"
+            memPerCpu: "4g",
+            quickStart: false
         }
     }
 };
@@ -425,10 +436,41 @@ mdi.confirmDelete((event, result) => {
 respond to data stream watches and other pty state events
 ----------------------------------------------------------- */
 const iframe = document.getElementById("embedded-apps-framework");
+const setConnectedTitle = function(){
+    const config = presets[presetSelect.value];
+    const opt = config.options;
+    const active = serverState.connected || serverState.listening;
+    const connection = !active ? null : {
+        server: config.mode == "Local" ? 
+          opt.regular.mdiDirectoryLocal :
+          opt.regular.serverDomain + ":" + opt.regular.mdiDirectoryRemote
+    };
+    mdi.setTitle(config.mode, connection);
+}
+const disableWhenConnected = [
+    "preset", // inputs required to make remote connections, i.e., before server is started
+    "mode",
+    "user",
+    "serverDomain",
+    "shinyPort",
+    "proxyPort",
+    "identityFile"
+];
+const disableConnectedInputs = function(){
+    const isLocal = presets[presetSelect.value].mode == "Local";
+    for(const form of document.forms){ // all inputs on the server config forms
+        for(option of form.elements){
+            option.disabled = serverState.listening || // all options disabled when server is running
+              (!isLocal && disableWhenConnected.includes(option.name) && serverState.connected); // otherwise those required for ssh
+        }
+    }    
+}
 mdi.connectedState((event, data) => { 
     serverState.connected = data.connected;
     setButtonsVisibility();
     if(serverState.connected) savePresets(true);
+    setConnectedTitle();
+    disableConnectedInputs();
 });
 mdi.listeningState((event, match, data) => { 
     serverState.listening = data.listening;
@@ -444,14 +486,12 @@ mdi.listeningState((event, match, data) => {
         mdi.showContent("https://midataint.github.io/docs/overview/"); // TODO: update URL
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
     }
+    setConnectedTitle();
+    disableConnectedInputs();
 });
 
 // TODO: 
-//       option for fast start of server
-//       security of remote server by user matching
-//       disable certain inputs when connected or listening
-//       node mode, hopefully can set Chromium proxy
-//       need better ways to refresh the framework page (add a link to the electron header?)
-//       copy paste from terminal
+//       multiple tabs (i.e. browserViews)?
+//       need better ways to refresh the framework page (add a link to the electron header? context menu?)
 //       publish and distribute
 //       documentation

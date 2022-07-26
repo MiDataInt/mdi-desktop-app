@@ -12,11 +12,13 @@ const path = require('path');
 const pty = require('node-pty');
 const { spawn } = require('child_process');
 const prompt = require('electron-prompt');
+const crypto = require('crypto');
+const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
 app.commandLine.appendSwitch('disable-http-cache');
 
 //////////////////////////////////
-require('electron-reload')(__dirname);
+// require('electron-reload')(__dirname);
 
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
@@ -72,6 +74,7 @@ const createMainWindow = () => {
 
   // set the app title bar based on server mode
   ipcMain.on('setTitle', (event, mode, connection) => {
+    console.log(connection)
     const connectedTo = connection ? (" - " + connection.server) : ""; 
     BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode + connectedTo);
   });
@@ -141,7 +144,7 @@ let retryCount = 0;
 const retryShowContent = (url, proxy) => new Promise((resolve, reject) => { 
   retryCount++;
   console.log("attempt #" + retryCount + " to load " + url + " via proxy " + proxy);
-  contentView.webContents.loadURL(url)
+  contentView.webContents.loadURL(url + "?mdiRemoteKey=" + mdiRemoteKey) // send our access key/non
     .then(resolve)
     .catch((e) => {
       setTimeout(() => {
@@ -282,6 +285,7 @@ const activateAppSshTerminal = function(){
           "', hostDir = '", mdi.opt.hostDir, 
           "', dataDir = '", mdi.opt.dataDir, 
           "', port = ", mdi.opt.regular.shinyPort, 
+          ", install = ", mdi.opt.install, 
           ", debug = ", "TRUE", // mdi.opt.developer,
           ", developer = ", mdi.opt.developer, 
           ", browser = ", "FALSE", // if TRUE, an external Chrome window is spawned
@@ -290,6 +294,7 @@ const activateAppSshTerminal = function(){
       ];
       ptyProcess.write(command.join(" ") + "\r");
     } else { // remote modes sent an mdi command sequence set by preload.js
+      ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey + "\r");
       ptyProcess.write(mdi.command.join(" ") + "\r");
     }
   });  

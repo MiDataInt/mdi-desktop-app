@@ -55,7 +55,7 @@ style the server-panel options inputs
 hr {
     margin: 7px 0;
 }
-.action-hyperlink, .get-file-link {
+.action-hyperlink, .get-file-link, .terminal-hyperlink {
     font-size: 13px;
     margin-left: 5px;
     cursor: pointer;

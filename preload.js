@@ -84,7 +84,7 @@ const assembleSshCommand = (config, createTunnel) => {
       createTunnel ? ( // for in-app MDI server connection, create a port tunnel
         config.mode === "Remote" ? 
         ["-L", [opt.regular.shinyPort, "127.0.0.1", opt.regular.shinyPort].join(":")] : // server mode = local port forwarding
-        ["-D", ["127.0.0.1" + opt.advanced.proxyPort].join(":")] // node mode = dynamic port forwarding (cluster forwards to node)
+        ["-D", ["127.0.0.1", opt.advanced.proxyPort].join(":")] // node mode = dynamic port forwarding (cluster forwards to node)
       ) :
       [] // extra connection windows are just simple interactive terminals
     ).
@@ -115,6 +115,7 @@ const assembleMdiLocal = function(opt){
   opt.hostDir = opt.advanced.hostDirectoryLocal.replace(/\\/g, '/') || "NULL";
   opt.dataDir = opt.advanced.dataDirectoryLocal.replace(/\\/g, '/') || "NULL";
   opt.developer = opt.regular.developer.toString().toUpperCase();
+  opt.install = (!opt.advanced.quickStart).toString().toUpperCase();
   return {
     mode: "Local",
     opt: opt   
