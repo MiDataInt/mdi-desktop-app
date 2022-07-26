@@ -5,7 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 /* -----------------------------------------------------------
 use contextBridge for inter-process communication (IPC)
-essentially, create a controlled API for renderer.js to talk to main.js as mdi.method()
+creates a controlled API for renderer.js to talk to main.js as mdi.method()
 ----------------------------------------------------------- */
 contextBridge.exposeInMainWorld('mdi', {
 
@@ -38,19 +38,18 @@ contextBridge.exposeInMainWorld('mdi', {
     const sshCommand = assembleSshCommand(config, true);
     ipcRenderer.send('sshConnect', sshCommand);
   },
-  sshDisconnect: (config) => {
-    ipcRenderer.send('sshDisconnect', config.mode);
-  },
+  sshDisconnect: () => ipcRenderer.send('sshDisconnect'),
 
   // install and run the MDI frameworks on the remote server
   // these actions are always required to launch the mdi-apps-framework
   installServer: (config) => {
-    const install = assembleMdiCommand(config, 'install');
-    ipcRenderer.send('installServer', install);
+    const mdi = assembleMdiCommand(config, 'install');
+    ipcRenderer.send('installServer', mdi);
   },
   startServer: (config) => {
-    const mdiCommand = assembleMdiCommand(config, 'run');
-    ipcRenderer.send('startServer', mdiCommand);
+    const mdi = assembleMdiCommand(config, 'run');
+    mdi.watchLeader = mdi.mode == "Node" ? "" : "";
+    ipcRenderer.send('startServer', mdi);
   },
   stopServer: (config) => {
     ipcRenderer.send('stopServer', config.mode);
@@ -84,8 +83,8 @@ const assembleSshCommand = (config, createTunnel) => {
     concat(
       createTunnel ? ( // for in-app MDI server connection, create a port tunnel
         config.mode === "Remote" ? 
-        ["-L", [opt.regular.shinyPort, "127.0.0.1", opt.regular.shinyPort].join(":")] : 
-        ["-D", opt.advanced.proxyPort]
+        ["-L", [opt.regular.shinyPort, "127.0.0.1", opt.regular.shinyPort].join(":")] : // server mode = local port forwarding
+        ["-D", ["127.0.0.1" + opt.advanced.proxyPort].join(":")] // node mode = dynamic port forwarding (cluster forwards to node)
       ) :
       [] // extra connection windows are just simple interactive terminals
     ).

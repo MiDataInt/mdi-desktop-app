@@ -15,6 +15,9 @@ const prompt = require('electron-prompt');
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
 app.commandLine.appendSwitch('disable-http-cache');
 
+//////////////////////////////////
+require('electron-reload')(__dirname);
+
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
   https://www.electronjs.org/docs/latest/tutorial/quick-start
@@ -118,11 +121,35 @@ const createContentView = () => {
   });
   ipcMain.on("showContent", (event, url, proxyRules) => {
     if(!proxyRules) proxyRules = "direct://";
-    contentView.webContents.session.setProxy({proxyRules: proxyRules}).then(() => {
-      contentView.webContents.loadURL(url);
-    }).catch(console.error);
+    const ses = contentView.webContents.session;
+    ses.closeAllConnections()
+      .then(() => ses.setProxy({
+          proxyRules: proxyRules,
+          proxyBypassRules: "127.0.0.1,[::1],localhost"
+      }))
+      .then(() => ses.resolveProxy(url))
+      .then((proxy) => {
+        retryCount = 0;
+        retryShowContent(url, proxy);
+      })
+      .catch(console.error);
   });
 };
+const showDelay = 500;
+const maxRetries = 10;
+let retryCount = 0;
+const retryShowContent = (url, proxy) => new Promise((resolve, reject) => { 
+  retryCount++;
+  console.log("attempt #" + retryCount + " to load " + url + " via proxy " + proxy);
+  contentView.webContents.loadURL(url)
+    .then(resolve)
+    .catch((e) => {
+      setTimeout(() => {
+        if(retryCount >= maxRetries) return reject(e);
+        retryShowContent(url, proxy).then(resolve);
+      }, showDelay);
+    });
+});
 
 /* -----------------------------------------------------------
 enable local file system search for an identity file, R executable, MDI directory, etc.
@@ -155,7 +182,7 @@ activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
 ----------------------------------------------------------- */
 const isWindows = process.platform.toLowerCase().startsWith("win");
 const shellCommand = isWindows ? 'powershell.exe' : 'bash';
-var watch = {
+let watch = {
   buffer: "",
   for: "",
   event: null,
@@ -181,7 +208,7 @@ const activateAppSshTerminal = function(){
   const lineClearRegex = /\x1b\[K\s+/; // https://notes.burke.libbey.me/ansi-escape-codes/
   ptyProcess.onData(data => {
     if(watch.for && // monitor the stream for signals of interest
-      !data.match(lineClearRegex)) { // ignoring lines with the ANSI escape code that is a signa to clear an old line
+      !data.match(lineClearRegex)) { // ignoring lines with the ANSI escape code that says to clear a line from the buffer
       watch.buffer += data;
       const match = watch.buffer.match(watch.for);
       if(match){
@@ -203,8 +230,8 @@ const activateAppSshTerminal = function(){
     ptyProcess.write(sshCommand.join(" ") + "\r");
     mainWindow.webContents.send("connectedState", {connected: true}); // TODO: smarter way to know whether connection was successful?
   });
-  ipcMain.on('sshDisconnect', (event, mode) => {
-    ptyProcess.write("\r" + "exit" + "\r");
+  ipcMain.on('sshDisconnect', (event) => {
+    ptyProcess.write("\r" + "exit" + "\r\r"); // sometimes need to subsequently type Ctrl-C in terminal window (but not here)
     mainWindow.webContents.send("connectedState", {connected: false});
   });
 
@@ -228,18 +255,22 @@ const activateAppSshTerminal = function(){
         ].join(" ")
       ];
       ptyProcess.write(commands.join("\r") + "\r");
-    } else {
+    } else { // remote modes sent an mdi command sequence set by preload.js
       ptyProcess.write(mdi.commands.join("; ") + "\r");
     }
   });  
   ipcMain.on('startServer', (event, mdi) => {
     watch = {
       buffer: "",
-      for: /\nListening on http:\/\/.+:\d+/,
+      for: mdi.mode == "Node" ? // watch for "leader http://address:port"
+        /\nTo use the MDI, point any web browser to:\s+http:\/\/.+:\d+/ :
+        /\nListening on http:\/\/.+:\d+/,
       event: "listeningState",
-      data: {
+      data: { // passed for use by renderer.js
         listening: true,
-        developer: mdi.opt.regular.developer
+        developer: mdi.opt.regular.developer,
+        mode: mdi.mode,
+        proxyPort: mdi.opt.advanced.proxyPort
       }
     };
     if(mdi.mode == "Local"){ // parse local command here due to OS dependency
@@ -258,13 +289,19 @@ const activateAppSshTerminal = function(){
         ].join("")
       ];
       ptyProcess.write(command.join(" ") + "\r");
-    } else {
+    } else { // remote modes sent an mdi command sequence set by preload.js
       ptyProcess.write(mdi.command.join(" ") + "\r");
     }
   });  
   ipcMain.on('stopServer', (event, mode) => {
-    ptyProcess.write('\x03'); // SIGNIT, Ctrl-C, ^C, ASCII 3
-    mainWindow.webContents.send("listeningState", null, {listening: false});
+    contentView.webContents.session.closeAllConnections().then(() => {
+      ptyProcess.write(
+        mode === "Local" ? 
+        '\x03' :  // SIGNIT, Ctrl-C, ^C, ASCII 3
+        "\r" + 1 + "\r" // key sequence to kill a server in mdi-remote-<server|node>.sh
+      );
+      mainWindow.webContents.send("listeningState", null, {listening: false});      
+    });
   });  
 }
 const getRScript = function(mdi){ // for local MDI calls
@@ -281,7 +318,8 @@ to give users an additional way to explore a server machine while the MDI is run
 const activateServerTerminal = function(){
   ipcMain.on('spawnTerminal', (event, sshCommand) => {
     if(isWindows){ // 'start' required to create a stable external window
-      if(!sshCommand) sshCommand = shellCommand; // Local mode
+      const shellCommand = "cmd.exe"; // not powershell
+      if(!sshCommand) sshCommand = shellCommand; // for Local mode
       spawn(shellCommand, ["/c", "start"].concat(sshCommand));
     } else {
       // TODO: handle linux/Mac does this work?

@@ -4,14 +4,15 @@
   "description": "Electron launcher for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
-    "start": "electron . --ignore-gpu-blacklist",
+    "start": "electron .",
     "rebuild": "electron-rebuild -f -w node-pty"
   },
   "author": "Thomas E. Wilson",
   "license": "MIT",
   "devDependencies": {
     "electron": "^19.0.9",
-    "electron-rebuild": "^3.2.8"
+    "electron-rebuild": "^3.2.8",
+    "electron-reload": "^2.0.0-alpha.1"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",

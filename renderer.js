@@ -110,7 +110,7 @@ const setButtonsVisibility = function(){
     const terminalIsReady = checkActionReadiness("ssh", false).success;
     serverState.nButtons = 0;
     setButtonVisibility(sshConnectButton,    !isLocal && sshIsReady && !serverState.connected);
-    setButtonVisibility(sshDisconnectButton, !isLocal && sshIsReady &&  serverState.connected);
+    setButtonVisibility(sshDisconnectButton, !isLocal && sshIsReady &&  serverState.connected && !serverState.listening);
     setButtonVisibility(installServerButton, isConnected && installIsReady && !serverState.listening);
     setButtonVisibility(startServerButton,   isConnected && runIsReady && !serverState.listening);
     setButtonVisibility(stopServerButton,    isConnected && serverState.listening);
@@ -182,7 +182,7 @@ sshConnectButton.addEventListener('click', function(event) {
 sshDisconnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', false);
     if(!config) return;
-    mdi.sshDisconnect(config);
+    mdi.sshDisconnect();
     xterm.focus();
 });
 installServerButton.addEventListener('click', function(event) {
@@ -236,8 +236,8 @@ const handleInputChange = function(form, input){
     const type = form.dataset.type; 
     const option = input.name;
     const value = input.type === "checkbox" ? input.checked : input.value.trim();
-    if(presets.working.options       === undefined) presets.working.options       = structuredClone(nullPreset.options);
-    if(presets.working.options[type] === undefined) presets.working.options[type] = structuredClone(nullPreset.options[type]);
+    if(presets.working.options       === undefined) presets.working.options       = structuredClone(defaultPreset.options);
+    if(presets.working.options[type] === undefined) presets.working.options[type] = structuredClone(defaultPreset.options[type]);
     presets.working.options[type][option] = value;
     commitWorkingChanges();
 }
@@ -296,7 +296,7 @@ for (const modeRadio of modeRadios) {
 const presetSelect = document.getElementById('preset');
 const presetsKey = "mdi-launcher-presets";
 const restrictedPresets = ["defaults", "mostRecent", "working"];
-const nullPreset = {
+const defaultPreset = { // for quickest creation of a config for UM Great Lakes remote mode
     mode: "Remote",
     options: {
         regular:{
@@ -325,7 +325,7 @@ const nullPreset = {
 };
 let presets = localStorage.getItem(presetsKey);
 const savePresets = function(setMostRecent) {
-    if(setMostRecent){
+    if(setMostRecent){ // save the current preset as last known good config state for next app load
         const config = presets[presetSelect.value];
         presets.mostRecent = structuredClone(config);
     }
@@ -333,27 +333,34 @@ const savePresets = function(setMostRecent) {
 }
 if(!presets) {
     presets = {
-        defaults:   structuredClone(nullPreset),
-        mostRecent: structuredClone(nullPreset),
-        working:    structuredClone(nullPreset)
+        defaults:   structuredClone(defaultPreset),
+        mostRecent: structuredClone(defaultPreset),
+        working:    structuredClone(defaultPreset)
     };
     savePresets();
 } else {
     presets = JSON.parse(presets);
 }
 const updatePresets = function(){
-    for(presetValue of Object.keys(presets)){
-        if(restrictedPresets.includes(presetValue)) continue;
-        const option = document.createElement("option");
-        option.value = presetValue;
-        option.text = presetValue;
-        presetSelect.add(option);
-        // TODO: finish this, need to ignore those already present, delete those not needed
-    }    
+    let current = [];
+    for(option of presetSelect.options) current.push(option.value);
+    let new_ = Object.keys(presets);
+    for(let i = current.length - 1; i >= 0; i--){ // delete action
+        const x = current[i];
+        if(!new_.includes(x) && !restrictedPresets.includes(x)) presetSelect.remove(i);
+    }
+    for(const x of new_.sort()){ // initialize and add actions; order user configs alphabetically
+        if(!current.includes(x)) {
+            const option = document.createElement("option");
+            option.value = x;
+            option.text = x;
+            presetSelect.add(option);            
+        }
+    }  
 }
 const changeToPreset = function(presetName){
     let preset = presets[presetName];
-    if(!preset) preset = structuredClone(nullPreset);
+    if(!preset) preset = structuredClone(defaultPreset);
     setServerMode(preset.mode, true);
 };
 presetSelect.addEventListener('change', function(){ 
@@ -427,23 +434,24 @@ mdi.listeningState((event, match, data) => {
     serverState.listening = data.listening;
     setButtonsVisibility();
     if(serverState.listening){
-
         savePresets(true);
-
         const url = match.match(/http:\/\/.+:\d+/)[0];
-        mdi.showContent(url);
-        if(serverPanelWorkingWidth > 0 && !data.developer) toggleServerPanel(); // by default, hide the server panel unless developing
-
+        const proxyRules = data.mode == "Node" ? "socks5://127.0.0.1:" + data.proxyPort : null;
+        mdi.showContent(url, proxyRules);
+        if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
+           !data.developer) toggleServerPanel();
     } else {
-        mdi.showContent("https://midataint.github.io/docs/overview/");
+        mdi.showContent("https://midataint.github.io/docs/overview/"); // TODO: update URL
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
     }
 });
 
-// TODO: save and delete configs from buttons; and save Most Recent when connected (or listening?)
+// TODO: 
+//       option for fast start of server
+//       security of remote server by user matching
 //       disable certain inputs when connected or listening
 //       node mode, hopefully can set Chromium proxy
-//       need better says to refresh the framework page (add a link to the electron header?)
+//       need better ways to refresh the framework page (add a link to the electron header?)
 //       copy paste from terminal
 //       publish and distribute
 //       documentation
