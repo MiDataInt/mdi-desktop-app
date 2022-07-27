@@ -37,14 +37,16 @@ activate dynamic element resizing
 ----------------------------------------------------------- */
 const serverConfigPanel = document.getElementById("server-config");
 const toggleButton = document.getElementById('server-panel-toggle');
+const tabControls = document.getElementById('contents-tab-controls');
 const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
 const serverPanelPadding = 10;
 const serverPanelWidth = terminalWidth + 2 * serverPanelPadding;
 const toggleButtonWidth = 20 + 2 * 1; // set in css
 let serverPanelWorkingWidth = serverPanelWidth;
 const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under contentView 
-    mdi.resizePanelWidths(window.innerWidth, serverPanelWorkingWidth);
+    mdi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
     toggleButton.style.left = serverPanelWorkingWidth + "px";
+    tabControls.style.left = (serverPanelWorkingWidth + toggleButtonWidth - 2) + "px";
 }
 const resizePanelHeights = function(){ // control xterm terminal height based on viewport and options displays
     const xtermHeight = window.innerHeight - serverConfigPanel.clientHeight - 2 * serverPanelPadding;
@@ -479,19 +481,87 @@ mdi.listeningState((event, match, data) => {
         savePresets(true);
         const url = match.match(/http:\/\/.+:\d+/)[0];
         const proxyRules = data.mode == "Node" ? "socks5://127.0.0.1:" + data.proxyPort : null;
-        mdi.showContent(url, proxyRules);
+        clearAddedTabs();
+        addTabDiv();
+        activeTabIndex = 1;
+        mdi.showFrameworkContents(url, proxyRules);
         if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
            !data.developer) toggleServerPanel();
     } else {
-        mdi.showContent("https://midataint.github.io/docs/overview/"); // TODO: update URL
+        mdi.clearFrameworkContents(); 
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
+        clearAddedTabs();
+        activeTabIndex = 0;
     }
-    setConnectedTitle();
+    setConnectedTitle(); 
     disableConnectedInputs();
 });
 
-// TODO: 
-//       multiple tabs (i.e. browserViews)?
-//       need better ways to refresh the framework page (add a link to the electron header? context menu?)
-//       publish and distribute
-//       documentation
+/* -----------------------------------------------------------
+contents BrowserView tab controls
+----------------------------------------------------------- */
+const refreshContents = document.getElementById('contents-refresh');
+const addTab = document.getElementById('add-tab');
+const contentsTabs = document.getElementById('contents-tabs')
+refreshContents.addEventListener("click", () => mdi.refreshContents());
+let nTabs = 1; // the actual number of current tabs
+let tabCounter = 1; // accumulates over all tabs ever opened
+let activeTabIndex = 0; // the docs tab
+const setActiveTab = function(tabIndex){ 
+    activeTabIndex = tabIndex;
+    mdi.selectTab(activeTabIndex);  
+    for(const tab of contentsTabs.children) {
+        if(parseInt(tab.dataset.index) === activeTabIndex) tab.classList.add('active-tab') 
+        else tab.classList.remove('active-tab') 
+    }         
+}
+const clearAddedTabs = function(){ // revert to a single docs tab on app listening state change
+    if(nTabs > 1) for(let i = nTabs - 1; i > 0; i--) contentsTabs.children[i].remove();
+    nTabs = 1;
+    tabCounter = 1;
+    activeTabIndex = 0;
+    setActiveTab(activeTabIndex);   
+}
+const addTabListener = function(tab){ // listen for both tab select and close on the tab div
+    tab.addEventListener("click", function(event){
+        const tabIndex = parseInt(tab.dataset.index);
+        if(event.target.classList.contains("contents-tab")){ // a tab select event
+            setActiveTab(tabIndex);
+        } else { // a tab close event
+            mdi.closeTab(tabIndex);
+            contentsTabs.children[tabIndex].remove();
+            nTabs--; 
+            let i = 0;
+            for(const x of contentsTabs.children) {
+                x.dataset.index = i; // re-index the remaining tabs
+                i++;
+            }
+            setActiveTab(activeTabIndex >= tabIndex ? activeTabIndex - 1 : activeTabIndex)
+        }
+        event.target.blur();
+    });
+};
+addTabListener(document.getElementById('mdi-docs-tab')); // initialize the first, permanenent tab
+const addTabDiv = function(){
+    nTabs++; 
+    tabCounter++;
+    const tabIndex = nTabs - 1;
+    const closeTab = document.createElement("span"); // an "X" to close the tab
+    closeTab.className = "close-tab";
+    closeTab.dataset.index = tabIndex;
+    closeTab.innerHTML = "<strong>x</strong>";
+    const tab = document.createElement("div"); // a div as the tab's control target
+    tab.className = "contents-tab";
+    tab.dataset.index = tabIndex;
+    tab.innerHTML = "Tab " + (tabCounter - 1) + "&nbsp;&nbsp;";
+    tab.appendChild(closeTab);
+    contentsTabs.appendChild(tab);
+    addTabListener(tab); // listen for both tab select and close on the tab div
+    setActiveTab(tabIndex); // switch to the new tab
+    addTab.blur();
+};
+addTab.addEventListener("click", () => { // add a new tab
+    mdi.addTab(window.innerHeight, window.innerWidth);    
+    addTabDiv();
+});
+mdi.showDocumentation((event, url) => { setActiveTab(0) });

@@ -13,26 +13,61 @@ const pty = require('node-pty');
 const { spawn } = require('child_process');
 const prompt = require('electron-prompt');
 const crypto = require('crypto');
-const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
-app.commandLine.appendSwitch('ignore-gpu-blacklist');
 app.commandLine.appendSwitch('disable-http-cache');
-
-if (require('electron-squirrel-startup')) return app.quit();
+// app.commandLine.appendSwitch('ignore-gpu-blacklist');
 
 /* -----------------------------------------------------------
 developer tools
 ----------------------------------------------------------- */
 // require('electron-reload')(__dirname);
-const devToolsMode = null; // left, undocked, detach, null
+const devToolsMode = "detach"; // left, undocked, detach, null
+
+/* -----------------------------------------------------------
+app constants and working variables
+----------------------------------------------------------- */
+const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
+const appsLauncherHelpUrl = 'https://midataint.github.io/docs/overview/'; // TODO: apps-launcher docs when available
+/* -------------------------------------------------------- */
+const startWidth = 1400;
+const startHeight = 900;
+const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
+const serverPanelWidth = terminalWidth + 2 * 10;
+const toggleButtonWidth = 20 + 2 * 1; // set in css
+const tabControlsHeight = 31; // set in css, including height, padding, bottom border
+const contentsStartX = serverPanelWidth + toggleButtonWidth - 2; 
+const bodyBorderWidth = 1;
+/* ----------------------------------------------------------- */
+let mainWindow = null;
+let docContents = {
+  url: appsLauncherHelpUrl,
+  proxyRules: "direct://"
+};
+let frameworkContents = {  // the same for all active framework tabs
+  url: appsLauncherHelpUrl,
+  proxyRules: "direct://"
+};
+let activeTabIndex = 0; // where 0 = docs, 1 = first framework tab
+const showDelay = 500;
+const maxRetries = 10;
+let retryCount = 0;
+/* ----------------------------------------------------------- */
+const isWindows = process.platform.toLowerCase().startsWith("win");
+const shellCommand = isWindows ? 'powershell.exe' : 'bash';
+let watch = { // for watching node-pty data streams for triggering events
+  buffer: "",
+  for: "",
+  event: null,
+  data: undefined
+};
 
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
   https://www.electronjs.org/docs/latest/tutorial/quick-start
   https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
 ----------------------------------------------------------- */
-let mainWindow = null;
-let contentView = null;
-if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
+if (require('electron-squirrel-startup')) { // to prevent multiple app loads when running Setup.exe
+  return app.quit();
+} else if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
     if (mainWindow) { // focus an existing window
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -55,13 +90,6 @@ if (app.requestSingleInstanceLock({})) { // allow at most a single instance of t
 /* -----------------------------------------------------------
 launch the Electron app in the main renderer, i.e., BrowserWindow
 ----------------------------------------------------------- */
-const startWidth = 1400;
-const startHeight = 900;
-const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
-const serverPanelWidth = terminalWidth + 2 * 10;
-const toggleButtonWidth = 20 + 2 * 1; // set in css
-const contentsStartX = serverPanelWidth + toggleButtonWidth - 2; 
-const bodyBorderWidth = 1;
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
     width: startWidth,
@@ -84,7 +112,7 @@ const createMainWindow = () => {
 
   // load the app page that allows users to configure and launch their server
   mainWindow.loadFile('index.html').then(() => {
-    createContentView();
+    addContentView(docContents, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
     if(devToolsMode) mainWindow.webContents.openDevTools({ mode: devToolsMode });    
   });
 
@@ -94,67 +122,104 @@ const createMainWindow = () => {
 };
 
 /* -----------------------------------------------------------
-attach and control a BrowserView for showing help and the apps framework
+attach and fill BrowserViews with app contents, one or more tabs
 ----------------------------------------------------------- */
-const createContentView = () => {
-  contentView = new BrowserView({
+const addContentView = function(contents, viewportHeight, viewportWidth, x) {
+  let bounds = viewportHeight ? {
+    x: x,
+    width: viewportWidth - x,        
+    y: bodyBorderWidth + tabControlsHeight, 
+    height: viewportHeight - bodyBorderWidth - tabControlsHeight    
+  } : mainWindow.getBrowserViews()[0].getBounds(); // framework tabs inherit size from the permanent docs tab
+  const contentView = new BrowserView({
     webPreferences: {
-      nodeIntegration: false, // security settings (defaults repeated here for clarity)
+      preload: path.join(__dirname, 'framework.js'),
+      nodeIntegration: false,
       sandbox: true,
       contextIsolation: true
     }
   });
-  mainWindow.setBrowserView(contentView);
+  mainWindow.addBrowserView(contentView); // not setBrowserView since we will support multiple tabs
   contentView.setAutoResize({
       width: true,
       height: true
   });
-  contentView.setBounds({ 
-      x: contentsStartX,
-      width: startWidth - contentsStartX,        
-      y: bodyBorderWidth, 
-      height: startHeight - bodyBorderWidth
-  });
-  contentView.webContents.loadURL('https://midataint.github.io/docs/overview/'); // TODO: apps-launcher docs when available
-  ipcMain.on("resizePanelWidths", (event, viewPortWidth, serverPanelWidth) => {
-    const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
-    contentView.setBounds({ 
-        x: x, 
-        width: viewPortWidth - x,         
-        y: bodyBorderWidth, 
-        height: startHeight - bodyBorderWidth
-    });
-  });
-  ipcMain.on("showContent", (event, url, proxyRules) => {
-    if(!proxyRules) proxyRules = "direct://";
-    const ses = contentView.webContents.session;
-    ses.closeAllConnections()
-      .then(() => ses.setProxy({
-          proxyRules: proxyRules,
-          proxyBypassRules: "127.0.0.1,[::1],localhost"
-      }))
-      .then(() => ses.resolveProxy(url))
-      .then((proxy) => {
-        retryCount = 0;
-        retryShowContent(url, proxy);
-      })
-      .catch(console.error);
-  });
+  contentView.setBounds(bounds);
+  const ses = contentView.webContents.session;
+  ses.setProxy({
+    proxyRules: contents.proxyRules,
+    proxyBypassRules: "127.0.0.1,[::1],localhost"
+  }).then(() => {
+    retryCount = 0;
+    retryShowContents(activeTabIndex, contents);
+  }).catch(console.error);
 };
-const showDelay = 500;
-const maxRetries = 10;
-let retryCount = 0;
-const retryShowContent = (url, proxy) => new Promise((resolve, reject) => { 
+const retryShowContents = (tabIndex, contents) => new Promise((resolve, reject) => { 
   retryCount++;
-  console.log("attempt #" + retryCount + " to load " + url + " via proxy " + proxy);
-  contentView.webContents.loadURL(url + "?mdiRemoteKey=" + mdiRemoteKey) // send our access key/non
+  console.log("attempt #" + retryCount + " to load " + contents.url + " via proxy " + contents.proxyRules);
+  mainWindow.getBrowserViews()[tabIndex].webContents.loadURL(contents.url + "?mdiRemoteKey=" + mdiRemoteKey) // send our access key/nonce
     .then(resolve)
     .catch((e) => {
       setTimeout(() => {
         if(retryCount >= maxRetries) return reject(e);
-        retryShowContent(url, proxy).then(resolve);
+        retryShowContents(tabIndex, contents).then(resolve);
       }, showDelay);
     });
+});
+
+/* -----------------------------------------------------------
+manage potentially mutiple BrowserView tabs
+----------------------------------------------------------- */
+const getActiveTab = function(){
+  return mainWindow.getBrowserViews()[activeTabIndex]
+}
+const showActiveTab = function(){
+  mainWindow.setTopBrowserView(getActiveTab());
+}
+ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPanelWidth) => {
+  const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
+    for(const tab of mainWindow.getBrowserViews()){
+      tab.setBounds({ 
+        x: x, 
+        width: viewportWidth - x,         
+        y: bodyBorderWidth + tabControlsHeight, 
+        height: viewportHeight - bodyBorderWidth - tabControlsHeight
+      });
+    }
+});
+ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize a new framework contents state
+  if(!proxyRules) proxyRules = "direct://";
+  frameworkContents = { // set the content metadata for this and all sister tabs
+    url: url,
+    proxyRules: proxyRules
+  };  
+  activeTabIndex = 1;  
+  addContentView(frameworkContents);
+  // const ses = getActiveTab().webContents.session; // then fill that one remaining tab
+  // ses.closeAllConnections()
+  //   .then(() => addContentView(frameworkContents))
+  //   .catch(console.error);
+});
+ipcMain.on("clearFrameworkContents", (event) => {
+  const tabs = mainWindow.getBrowserViews(); // remove all framework tabs
+  if(tabs.length > 1) for(let i = tabs.length - 1; i > 0; i--) mainWindow.removeBrowserView(tabs[i])
+  showDocumentation(appsLauncherHelpUrl);
+});
+ipcMain.on("refreshContents", (event) => {
+  getActiveTab().webContents.reload();
+});
+ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
+  activeTabIndex = mainWindow.getBrowserViews().length + 1;
+  addContentView(frameworkContents);
+});
+ipcMain.on("selectTab", (event, tabIndex) => {
+  activeTabIndex = tabIndex;
+  showActiveTab();
+});
+ipcMain.on("closeTab", (event, tabIndex) => {
+  if(activeTabIndex >= tabIndex) activeTabIndex = tabIndex - 1;
+  mainWindow.removeBrowserView(mainWindow.getBrowserViews()[tabIndex])
+  showActiveTab();
 });
 
 /* -----------------------------------------------------------
@@ -186,14 +251,6 @@ ipcMain.on('showPrompt', (event, options) => {
 /* -----------------------------------------------------------
 activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
 ----------------------------------------------------------- */
-const isWindows = process.platform.toLowerCase().startsWith("win");
-const shellCommand = isWindows ? 'powershell.exe' : 'bash';
-let watch = {
-  buffer: "",
-  for: "",
-  event: null,
-  data: undefined
-};
 const activateAppSshTerminal = function(){
 
   // open a pseudo-terminal to the local computer's command shell
@@ -280,6 +337,7 @@ const activateAppSshTerminal = function(){
       }
     };
     if(mdi.mode == "Local"){ // parse local command here due to OS dependency
+      ptyProcess.write(isWindows ? "$env:MDI_IS_ELECTRON='TRUE'\r" : "export MDI_IS_ELECTRON=TRUE\r"); 
       const rScript = getRScript(mdi);
       const command = [
         rScript, "-e",
@@ -297,12 +355,13 @@ const activateAppSshTerminal = function(){
       ];
       ptyProcess.write(command.join(" ") + "\r");
     } else { // remote modes sent an mdi command sequence set by preload.js
+      ptyProcess.write("export MDI_IS_ELECTRON=TRUE\r"); // let mdi-apps-framework known they are running in Electron
       ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey + "\r");
       ptyProcess.write(mdi.command.join(" ") + "\r");
     }
   });  
   ipcMain.on('stopServer', (event, mode) => {
-    contentView.webContents.session.closeAllConnections().then(() => {
+    getActiveTab().webContents.session.closeAllConnections().then(() => {
       ptyProcess.write(
         mode === "Local" ? 
         '\x03' :  // SIGNIT, Ctrl-C, ^C, ASCII 3
@@ -336,3 +395,22 @@ const activateServerTerminal = function(){
     }
   })  
 }
+
+/* -----------------------------------------------------------
+handle IPC from mdi-apps-framework to Electron
+----------------------------------------------------------- */
+const showDocumentation = function(url){
+  docContents = {
+    url: url,
+    proxyRules: "direct://"
+  };
+  activeTabIndex = 0; // i.e., the permanent docs tab
+  retryCount = 0;
+  retryShowContents(activeTabIndex, docContents).then(() => {
+    showActiveTab();
+    mainWindow.webContents.send('showDocumentation', url);
+  }).catch(console.error);
+};
+ipcMain.on("showDocumentation", (event, url) => {
+  showDocumentation(url);
+});

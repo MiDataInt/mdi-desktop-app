@@ -201,7 +201,14 @@
     </div>
 
     <!-- a tall vertical button for toggling the visibility of the server-panel --> 
-    <button id="server-panel-toggle" class="">&lt;</button>
+    <button id="server-panel-toggle">&lt;</button>
+
+    <!-- a wide div that contains the BrowserView tab controls --> 
+    <div id="contents-tab-controls">
+      <span id="contents-refresh" class="tab-control-link">&#8635;</span>      
+      <span id="contents-tabs"><div id="mdi-docs-tab" class="contents-tab active-tab" data-index="0">Docs</div></span>
+      <span id="add-tab" class="tab-control-link">+</span>
+    </div>
 
     <!-- finish up page html and load external scripts -->
     <script src="node_modules/xterm/lib/xterm.js"></script>

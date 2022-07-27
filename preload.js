@@ -20,8 +20,8 @@ contextBridge.exposeInMainWorld('mdi', {
 
   // support dynamic resizing
   xtermResize: (size) => ipcRenderer.send('xtermResize', size),
-  resizePanelWidths: (viewPortWidth, serverPanelWidth) => {
-    ipcRenderer.send('resizePanelWidths', viewPortWidth, serverPanelWidth);
+  resizePanelWidths: (viewportHeight, viewportWidth, serverPanelWidth) => {
+    ipcRenderer.send('resizePanelWidths', viewportHeight, viewportWidth, serverPanelWidth);
   },
 
   // enable local file system search for an identity file, MDI folder, etc.
@@ -65,8 +65,14 @@ contextBridge.exposeInMainWorld('mdi', {
   connectedState: (data) => ipcRenderer.on('connectedState', data),
   listeningState: (match, data) => ipcRenderer.on('listeningState', match, data),
 
-  // load content into the content BrowserView
-  showContent: (url, proxyRules) => ipcRenderer.send('showContent', url, proxyRules)
+  // load content into the content BrowserView, contents BrowserView tab controls
+  showFrameworkContents: (url, proxyRules) => ipcRenderer.send('showFrameworkContents', url, proxyRules),
+  clearFrameworkContents: () => ipcRenderer.send('clearFrameworkContents'),
+  refreshContents: () => ipcRenderer.send('refreshContents'),
+  addTab: (viewportHeight, viewportWidth) => ipcRenderer.send('addTab', viewportHeight, viewportWidth),
+  selectTab: (tabIndex) => ipcRenderer.send('selectTab', tabIndex),
+  closeTab: (tabIndex) => ipcRenderer.send('closeTab', tabIndex),
+  showDocumentation: (url) => ipcRenderer.on('showDocumentation', url) // in response to mdi-apps-framework
 });
 
 /* -----------------------------------------------------------

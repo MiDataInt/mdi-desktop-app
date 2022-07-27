@@ -1,6 +1,10 @@
 /* -----------------------------------------------------------
 configure the launcher app panel structure
-three panels define the main page (server-panel, server-panel-toggle, and a BrowserView) 
+three app panels define the main page:
+    server-panel
+    server-panel-toggle
+    contents-tab-controls
+plus a set of stacked BrowserViews for content display
 ----------------------------------------------------------- */
 body {
     position: relative;
@@ -11,14 +15,25 @@ body {
     font-size: 15px;
     border-top: 1px solid #888;
 } 
-#server-panel, #server-panel-toggle {
+#server-panel, #server-panel-toggle, #contents-tab-controls {
     position: absolute;
     top: 0px;    
+}
+#server-panel, #server-panel-toggle {   
     height: 100vh;
 }
+
+/* inputs and a terminal for configuring the server connection */
 #server-panel {
     left: 0px;
     padding: 10px;
+}
+#server-config {
+    font-size: 14px;
+}
+#terminal {
+    border-left: 3px solid black;
+    width: 581px; /* determined empirically */
 }
 
 /* server-panel tall vertical show/hide button */
@@ -40,13 +55,51 @@ body {
     color: #006;
 }
 
-/* inputs and terminal panels in the leftmost server-panel */
-#server-config {
+/* tab control panel for the content BrowserViews */
+#contents-tab-controls {
+    left: 624px;
+    height: 30px;
+    line-height: 30px;
+    border-bottom: 1px solid #888;
+    padding: 0 10px;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: #dfdfdf;
+}
+#contents-tab-controls>span {
+    margin-right: 10px;
+}
+.contents-tab:first-of-type, #mdi-docs-tab {
+    border-left: 1px solid #888; 
+}
+.contents-tab {
+    display: inline-block;
+    line-height: inherit;
+    width: 100px;
+    text-align: center;
+    border-right: 1px solid #888;
+    cursor: pointer;
     font-size: 14px;
 }
-#terminal {
-    border-left: 3px solid black;
-    width: 581px; /* determined empirically */
+.active-tab {
+    background-color: #efefef;
+}
+.tab-control-link {
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.tab-control-link:hover, .contents-tab:hover {
+    color: #00b;
+    text-shadow: 1px 1px 1px #efefef;
+}
+.close-tab {
+    font-size: 16px;
+}
+.close-tab:hover {
+    color: #b00 !important;
+    text-shadow: 1px 1px 1px #efefef;  
 }
 
 /* -----------------------------------------------------------
@@ -111,7 +164,6 @@ select {
     height: 35px;
     margin: 5px;
     cursor: pointer;
-    /* font-weight: bold; */
     border-radius: 8px;
     border: 1px solid #888;
     background-color: #dfdfdf;
