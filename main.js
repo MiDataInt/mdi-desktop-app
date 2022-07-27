@@ -17,8 +17,13 @@ const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing 
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
 app.commandLine.appendSwitch('disable-http-cache');
 
-//////////////////////////////////
+if (require('electron-squirrel-startup')) return app.quit();
+
+/* -----------------------------------------------------------
+developer tools
+----------------------------------------------------------- */
 // require('electron-reload')(__dirname);
+const devToolsMode = null; // left, undocked, detach, null
 
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
@@ -50,7 +55,6 @@ if (app.requestSingleInstanceLock({})) { // allow at most a single instance of t
 /* -----------------------------------------------------------
 launch the Electron app in the main renderer, i.e., BrowserWindow
 ----------------------------------------------------------- */
-const devToolsMode = "detach"; // left, undocked, detach, null <<< for developers >>>
 const startWidth = 1400;
 const startHeight = 900;
 const terminalWidth = 581 + 1 * 3; // determined empirically, plus css border
@@ -74,7 +78,6 @@ const createMainWindow = () => {
 
   // set the app title bar based on server mode
   ipcMain.on('setTitle', (event, mode, connection) => {
-    console.log(connection)
     const connectedTo = connection ? (" - " + connection.server) : ""; 
     BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode + connectedTo);
   });
