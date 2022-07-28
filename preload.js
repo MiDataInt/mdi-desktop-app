@@ -2,6 +2,8 @@
 preload.js has limited access to Node in support of renderer.js as a conduit to main.js
 ----------------------------------------------------------- */
 const { contextBridge, ipcRenderer } = require('electron');
+const findFreePort = require("find-free-port");
+let mdiPort = 0; // used as both proxy and shiny ports depending on mode
 
 /* -----------------------------------------------------------
 use contextBridge for inter-process communication (IPC)
@@ -35,8 +37,11 @@ contextBridge.exposeInMainWorld('mdi', {
   // establish/terminate an ssh connection to the remote server on user request
   // these actions are only used in remote, not local, server modes
   sshConnect: (config) => {
-    const sshCommand = assembleSshCommand(config, true);
-    ipcRenderer.send('sshConnect', sshCommand);
+    getRandomFreeLocalPort().then(([port]) => {
+      mdiPort = port;
+      const sshCommand = assembleSshCommand(config, true);
+      ipcRenderer.send('sshConnect', sshCommand);      
+    })
   },
   sshDisconnect: () => ipcRenderer.send('sshDisconnect'),
 
@@ -49,7 +54,7 @@ contextBridge.exposeInMainWorld('mdi', {
   startServer: (config) => {
     const mdi = assembleMdiCommand(config, 'run');
     mdi.watchLeader = mdi.mode == "Node" ? "" : "";
-    ipcRenderer.send('startServer', mdi);
+    ipcRenderer.send('startServer', mdi, mdiPort);
   },
   stopServer: (config) => {
     ipcRenderer.send('stopServer', config.mode);
@@ -57,6 +62,7 @@ contextBridge.exposeInMainWorld('mdi', {
 
   // launch a host terminal external to the electron app with an interactive ssh session 
   spawnTerminal: (config) => {
+
     const sshCommand = config.mode == "Local" ? "" : assembleSshCommand(config, false);
     ipcRenderer.send('spawnTerminal', sshCommand)
   },
@@ -89,8 +95,12 @@ const assembleSshCommand = (config, createTunnel) => {
     concat(
       createTunnel ? ( // for in-app MDI server connection, create a port tunnel
         config.mode === "Remote" ? 
-        ["-L", [opt.regular.shinyPort, "127.0.0.1", opt.regular.shinyPort].join(":")] : // server mode = local port forwarding
-        ["-D", ["127.0.0.1", opt.advanced.proxyPort].join(":")] // node mode = dynamic port forwarding (cluster forwards to node)
+          // server mode = local port forwarding
+          // 127.0.0.1(localhost) here is the destination as interpreted by the server, i.e., is the server
+          ["-L", [mdiPort, "127.0.0.1", mdiPort].join(":")] : 
+          // node mode = dynamic port forwarding (cluster forwards to node)
+          // 127.0.0.1(localhost) here is the user's local computer
+          ["-D", ["127.0.0.1", mdiPort].join(":")] 
       ) :
       [] // extra connection windows are just simple interactive terminals
     ).
@@ -162,10 +172,11 @@ const assembleRemoteRun = function(opt){ // run command when server mode == remo
     mode: "Remote",
     opt: opt,
     command: [
-      "bash", // the call to the remote target script
+      // the call to the remote target script
+      "bash", 
       opt.remoteTarget,
-      //-------------------------
-      opt.regular.shinyPort, // the arguments required by the target script
+      // arguments required by the target script
+      mdiPort, // R Shiny port, used in local port forward and R process on login node
       opt.mdiDir,
       opt.dataDirectory,
       opt.hostDirectory,
@@ -181,12 +192,13 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
     mode: "Node",
     opt: opt,
     command: [
-      "bash", // the call to the remote target script
+      // the call to the remote target script
+      "bash", 
       opt.remoteTarget,
-      //-------------------------
-      opt.advanced.proxyPort, // the arguments required by the target script
+      // arguments required by the target script
+      mdiPort, // proxy port, used in dynamic port forward, for reporting only 
       opt.rLoadCommand,
-      opt.regular.shinyPort,
+      mdiPort, // R Shiny port, used by R server in worker node process
       opt.mdiDir,
       opt.dataDirectory,
       opt.hostDirectory,
@@ -207,4 +219,16 @@ const parseRemoteRunOptions = function(opt){ // convert user inputs into values 
   opt.developer = opt.regular.developer.toString().toUpperCase();
   opt.rLoadCommand = opt.regular.rLoadCommand ? opt.regular.rLoadCommand.replace(/ /g, "~~") : "echo";
   return opt;
+}
+
+/* -----------------------------------------------------------
+return a promise that resolves to an array with a single, random, free local port
+this may or may not be free on the server (but probably is)
+----------------------------------------------------------- */
+const getRandomFreeLocalPort = () => { 
+  const searchRange = 1000;
+  const minPort = 49152; // dynamic port range (never registered to apps)
+  const maxPort = 65535 - searchRange;
+  const startPort = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;
+  return findFreePort(startPort);
 }

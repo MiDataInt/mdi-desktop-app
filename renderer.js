@@ -136,12 +136,9 @@ const sshRequiredOptions = function(config, createTunnel){
     return {
         regular:{
             user: !isLocal,
-            serverDomain: !isLocal,
-            shinyPort: createTunnel && !isNode
+            serverDomain: !isLocal
         },
-        advanced:{        
-            proxyPort: createTunnel && isNode
-        }
+        advanced:{ }
     }    
 };
 const mdiRequiredOptions = function(config, action){
@@ -155,11 +152,9 @@ const mdiRequiredOptions = function(config, action){
             clusterAccount: isNodeRun,
             jobTimeMinutes: isNodeRun,
             mdiDirectoryRemote: !isLocal,
-            mdiDirectoryLocal: isLocal,
-            shinyPort: true 
+            mdiDirectoryLocal: isLocal
         },
         advanced: {                 
-            proxyPort: isNodeRun,
             cpusPerTask: isNodeRun,
             memPerCpu: isNodeRun
         }
@@ -320,7 +315,6 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             mdiDirectoryLocal: "~/mdi",
             rLoadCommand: "",
             rDirectory: "",
-            shinyPort: 3838,
             developer: false
         },
         advanced:{
@@ -329,7 +323,6 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             dataDirectoryLocal: "",
             hostDirectoryRemote: "",
             hostDirectoryLocal: "",
-            proxyPort: 1080,
             cpusPerTask: 2,
             memPerCpu: "4g",
             quickStart: false
@@ -454,8 +447,6 @@ const disableWhenConnected = [
     "mode",
     "user",
     "serverDomain",
-    "shinyPort",
-    "proxyPort",
     "identityFile"
 ];
 const disableConnectedInputs = function(){
@@ -479,14 +470,22 @@ mdi.listeningState((event, match, data) => {
     setButtonsVisibility();
     if(serverState.listening){
         savePresets(true);
-        const url = match.match(/http:\/\/.+:\d+/)[0];
-        const proxyRules = data.mode == "Node" ? "socks5://127.0.0.1:" + data.proxyPort : null;
+        const isNode = data.mode == "Node";
+        const url = isNode ? 
+            "http://" + match.match(/\S+:\d+/)[0]:
+            match.match(/http:\/\/.+:\d+/)[0];
+        const proxyRules = isNode ? 
+            "socks5://127.0.0.1:" + data.mdiPort : 
+            null;
         clearAddedTabs();
         addTabDiv();
         activeTabIndex = 1;
-        mdi.showFrameworkContents(url, proxyRules);
-        if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
-           !data.developer) toggleServerPanel();
+        setTimeout(() => {
+            xterm.write("\rplease wait a moment for the page to load\n\r");
+            mdi.showFrameworkContents(url, proxyRules);
+            if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
+               !data.developer) toggleServerPanel();
+        }, isNode ? 5000 : 0); // since node mode hits its signal before the server initializes
     } else {
         mdi.clearFrameworkContents(); 
         if(serverPanelWorkingWidth == 0) toggleServerPanel();
@@ -553,7 +552,10 @@ const addTabDiv = function(){
     const tab = document.createElement("div"); // a div as the tab's control target
     tab.className = "contents-tab";
     tab.dataset.index = tabIndex;
-    tab.innerHTML = "Tab " + (tabCounter - 1) + "&nbsp;&nbsp;";
+    tab.innerHTML = 
+        (serverState.listening ? "Apps " : "Docs ") + 
+        (tabCounter - (serverState.listening ? 1 : 0)) + 
+        "&nbsp;&nbsp;";
     tab.appendChild(closeTab);
     contentsTabs.appendChild(tab);
     addTabListener(tab); // listen for both tab select and close on the tab div

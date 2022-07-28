@@ -19,8 +19,7 @@ app.commandLine.appendSwitch('disable-http-cache');
 /* -----------------------------------------------------------
 developer tools
 ----------------------------------------------------------- */
-// require('electron-reload')(__dirname);
-const devToolsMode = "detach"; // left, undocked, detach, null
+const devToolsMode = null; // left, undocked, detach, null
 
 /* -----------------------------------------------------------
 app constants and working variables
@@ -47,7 +46,7 @@ let frameworkContents = {  // the same for all active framework tabs
   proxyRules: "direct://"
 };
 let activeTabIndex = 0; // where 0 = docs, 1 = first framework tab
-const showDelay = 500;
+const showDelay = 1000;
 const maxRetries = 10;
 let retryCount = 0;
 /* ----------------------------------------------------------- */
@@ -98,7 +97,6 @@ const createMainWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, // security settings (defaults repeated here for clarity)
-      sandbox: true,
       contextIsolation: true
     },
     autoHideMenuBar: true // we don't need a top menu (File, Edit, etc.)
@@ -195,10 +193,6 @@ ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize 
   };  
   activeTabIndex = 1;  
   addContentView(frameworkContents);
-  // const ses = getActiveTab().webContents.session; // then fill that one remaining tab
-  // ses.closeAllConnections()
-  //   .then(() => addContentView(frameworkContents))
-  //   .catch(console.error);
 });
 ipcMain.on("clearFrameworkContents", (event) => {
   const tabs = mainWindow.getBrowserViews(); // remove all framework tabs
@@ -322,18 +316,18 @@ const activateAppSshTerminal = function(){
       ptyProcess.write(mdi.commands.join("; ") + "\r");
     }
   });  
-  ipcMain.on('startServer', (event, mdi) => {
+  ipcMain.on('startServer', (event, mdi, mdiPort) => {
     watch = {
       buffer: "",
-      for: mdi.mode == "Node" ? // watch for "leader http://address:port"
-        /\nTo use the MDI, point any web browser to:\s+http:\/\/.+:\d+/ :
+      for: mdi.mode == "Node" ?
+        /\nMDI server running on host port .+:\d+/ :
         /\nListening on http:\/\/.+:\d+/,
       event: "listeningState",
       data: { // passed for use by renderer.js
         listening: true,
         developer: mdi.opt.regular.developer,
         mode: mdi.mode,
-        proxyPort: mdi.opt.advanced.proxyPort
+        mdiPort: mdiPort
       }
     };
     if(mdi.mode == "Local"){ // parse local command here due to OS dependency
@@ -345,7 +339,7 @@ const activateAppSshTerminal = function(){
           "\"mdi::run('", mdi.opt.mdiDir, 
           "', hostDir = '", mdi.opt.hostDir, 
           "', dataDir = '", mdi.opt.dataDir, 
-          "', port = ", mdi.opt.regular.shinyPort, 
+          "', port = ", "NULL", // R Shiny auto-selects local ports
           ", install = ", mdi.opt.install, 
           ", debug = ", "TRUE", // mdi.opt.developer,
           ", developer = ", mdi.opt.developer, 
@@ -365,7 +359,7 @@ const activateAppSshTerminal = function(){
       ptyProcess.write(
         mode === "Local" ? 
         '\x03' :  // SIGNIT, Ctrl-C, ^C, ASCII 3
-        "\r" + 1 + "\r" // key sequence to kill a server in mdi-remote-<server|node>.sh
+        "\rquit\r" // key sequence to kill a server in mdi-remote-<server|node>.sh
       );
       mainWindow.webContents.send("listeningState", null, {listening: false});      
     });
@@ -412,5 +406,7 @@ const showDocumentation = function(url){
   }).catch(console.error);
 };
 ipcMain.on("showDocumentation", (event, url) => {
-  showDocumentation(url);
+  // TODO: further sanitize incoming URL against nefarious requests?
+  if(url.match(/https:\/\/.+\.github\.io\//)) showDocumentation(url)
+  else console.log("bad documentation url: " + url);
 });
