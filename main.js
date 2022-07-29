@@ -19,7 +19,7 @@ app.commandLine.appendSwitch('disable-http-cache');
 /* -----------------------------------------------------------
 developer tools
 ----------------------------------------------------------- */
-const devToolsMode = "detach"; // "left", "undocked", "detach", null
+const devToolsMode = null; // "left", "undocked", "detach", null
 
 /* -----------------------------------------------------------
 app constants and working variables
@@ -64,9 +64,10 @@ Electron app windows and flow control, see:
   https://www.electronjs.org/docs/latest/tutorial/quick-start
   https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
 ----------------------------------------------------------- */
-if (require('electron-squirrel-startup')) { // to prevent multiple app loads when running Setup.exe
-  return app.quit();
-} else if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
+// if (require('electron-squirrel-startup')) { // to prevent multiple app loads when running Setup.exe
+//   return app.quit();
+// } else 
+if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
     if (mainWindow) { // focus an existing window
       if (mainWindow.isMinimized()) mainWindow.restore();

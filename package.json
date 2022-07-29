@@ -4,55 +4,26 @@
   "description": "Electron launcher for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
-    "start": "electron-forge start",
-    "rebuild": "electron-rebuild -f -w node-pty",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "author": "Thomas E. Wilson",
   "license": "MIT",
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.65",
-    "@electron-forge/maker-deb": "^6.0.0-beta.65",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.65",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.65",
-    "@electron-forge/maker-zip": "^6.0.0-beta.65",
-    "electron": "^19.0.9",
-    "electron-rebuild": "^3.2.8"
+    "electron": "^19.0.10",
+    "electron-builder": "^23.1.0"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",
-    "electron-squirrel-startup": "^1.0.0",
     "find-free-port": "^2.0.0",
     "node-pty": "^0.10.1",
     "xterm": "^4.19.0"
   },
-  "config": {
-    "forge": {
-      "packagerConfig": {},
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "mdi_electron"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin",
-            "win32"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ]
+  "build": {
+    "appId": "MichiganDataInterface.AppLauncher",
+    "win": {
+      "target": "portable"
     }
   }
 }
