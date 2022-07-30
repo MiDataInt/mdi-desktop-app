@@ -8,6 +8,7 @@ web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
 const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const pty = require('node-pty');
 const { spawn } = require('child_process');
@@ -52,6 +53,7 @@ let retryCount = 0;
 /* ----------------------------------------------------------- */
 const isWindows = process.platform.toLowerCase().startsWith("win");
 const shellCommand = isWindows ? 'powershell.exe' : 'bash';
+let fsDelimiter = isWindows ? "\\" : "/";
 let watch = { // for watching node-pty data streams for triggering events
   buffer: "",
   for: "",
@@ -220,15 +222,31 @@ ipcMain.on("closeTab", (event, tabIndex) => {
 /* -----------------------------------------------------------
 enable local file system search for an identity file, R executable, MDI directory, etc.
 ----------------------------------------------------------- */
-async function getLocalFile(event, type) {
-  const { canceled, filePaths } = await dialog.showOpenDialog({properties: [
-    type === "file" ? "openFile" : "openDirectory",
-    "showHiddenFiles"
-  ]});
-  if (canceled) return;
-  return filePaths[0];
-};
-ipcMain.handle('getLocalFile', getLocalFile);
+const getRBinPathDefault = function(){
+  let path = "";
+  if(isWindows){
+    const rootFolder = 'C:\\Program Files\\R';
+    if(fs.existsSync(rootFolder)){
+      const versions = fs.readdirSync(rootFolder);
+      if(versions.length >= 1) path = rootFolder +  '\\' + versions[versions.length - 1] + '\\bin';
+    }
+  }
+  return path; 
+}
+ipcMain.handle('getLocalFile', (event, options) => {
+  let defaultPath = options.defaultPath;
+  if(defaultPath === "rBinPathDefault") defaultPath = getRBinPathDefault();
+  if(defaultPath === "sshDir") defaultPath = app.getPath('home') + fsDelimiter + ".ssh";
+  if(!defaultPath || !fs.existsSync(defaultPath)) defaultPath = app.getPath('home');
+  const files = dialog.showOpenDialogSync(mainWindow, {
+    defaultPath: defaultPath,
+    properties: [
+      options.type === "file" ? "openFile" : "openDirectory",
+      "showHiddenFiles"
+    ]
+  });  
+  return files ? files[0] : undefined;
+});
 
 /* -----------------------------------------------------------
 enable system error and message dialogs via Electron dialog API and electron-prompt
@@ -250,12 +268,15 @@ const activateAppSshTerminal = function(){
 
   // open a pseudo-terminal to the local computer's command shell
   // this terminal will receive appropriate subsequent connect/install/run commands
-  const ptyProcess = pty.spawn(shellCommand, [], {
+  let ptyProcess = pty.spawn(shellCommand, [], {
     name: 'mdi-remote-terminal',
     cols: 80,
     rows: 24,
     cwd: app.getPath('home'),
     env: process.env
+  });
+  ptyProcess.onExit(() => { // handle rare condition where pty exits while app is running
+    activateAppSshTerminal();
   });
 
   // support dynamic terminal resizing

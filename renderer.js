@@ -224,7 +224,10 @@ const fileOptionInputs = document.getElementsByClassName('fileOptionInput');
 for (const fileOptionInput of fileOptionInputs) {
     const elements = fileOptionInput.children;
     elements[1].addEventListener('click', async () => {
-        const filePath = await mdi.getLocalFile(elements[1].dataset.type);
+        const filePath = await mdi.getLocalFile({
+            defaultPath: elements[0].value || elements[1].dataset.default,
+            type: elements[1].dataset.type
+        });
         if(filePath) elements[0].value = filePath;
         elements[0].dispatchEvent(new Event('change', {bubbles: true}));
     });

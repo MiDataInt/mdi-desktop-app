@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld('mdi', {
   },
 
   // enable local file system search for an identity file, MDI folder, etc.
-  getLocalFile: (type) => ipcRenderer.invoke('getLocalFile', type),
+  getLocalFile: (options) => ipcRenderer.invoke('getLocalFile', options),
   
   // data flow between the back-end node-pty pseudo-terminal and the front-end xterm terminal window
   // using IPC obviates the need for setting nodeIntegration:true
