@@ -318,7 +318,6 @@ const activateAppSshTerminal = function(){
     }
   });  
   ipcMain.on('startServer', (event, mdi, mdiPort) => {
-    console.log(mdiPort)
     watch = {
       buffer: "",
       for: mdi.mode == "Node" ?
@@ -327,7 +326,7 @@ const activateAppSshTerminal = function(){
       event: "listeningState",
       data: { // passed for use by renderer.js
         listening: true,
-        developer: mdi.opt.regular.developer,
+        developer: mdi.opt.regular.developer, // logical
         mode: mdi.mode,
         mdiPort: mdiPort
       }
@@ -344,7 +343,7 @@ const activateAppSshTerminal = function(){
           "', port = ", "NULL", // R Shiny auto-selects local ports
           ", install = ", mdi.opt.install, 
           ", debug = ", "TRUE", // mdi.opt.developer,
-          ", developer = ", mdi.opt.developer, 
+          ", developer = ", mdi.opt.developer, // as string
           ", browser = ", "FALSE", // if TRUE, an external Chrome window is spawned
           ")\"" // install = TRUE
         ].join("")

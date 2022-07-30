@@ -53,7 +53,6 @@ contextBridge.exposeInMainWorld('mdi', {
   },
   startServer: (config) => {
     const mdi = assembleMdiCommand(config, 'run');
-    mdi.watchLeader = mdi.mode == "Node" ? "" : "";
     ipcRenderer.send('startServer', mdi, mdiPort);
   },
   stopServer: (config) => {
