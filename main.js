@@ -19,7 +19,7 @@ app.commandLine.appendSwitch('disable-http-cache');
 /* -----------------------------------------------------------
 developer tools
 ----------------------------------------------------------- */
-const devToolsMode = null; // "left", "undocked", "detach", null
+const devToolsMode = "detach"; // "left", "undocked", "detach", null
 
 /* -----------------------------------------------------------
 app constants and working variables
@@ -318,6 +318,7 @@ const activateAppSshTerminal = function(){
     }
   });  
   ipcMain.on('startServer', (event, mdi, mdiPort) => {
+    console.log(mdiPort)
     watch = {
       buffer: "",
       for: mdi.mode == "Node" ?

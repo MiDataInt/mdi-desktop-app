@@ -2,7 +2,7 @@
 preload.js has limited access to Node in support of renderer.js as a conduit to main.js
 ----------------------------------------------------------- */
 const { contextBridge, ipcRenderer } = require('electron');
-const findFreePort = require("find-free-port");
+const net = require('net');
 let mdiPort = 0; // used as both proxy and shiny ports depending on mode
 
 /* -----------------------------------------------------------
@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld('mdi', {
   // establish/terminate an ssh connection to the remote server on user request
   // these actions are only used in remote, not local, server modes
   sshConnect: (config) => {
-    getRandomFreeLocalPort().then(([port]) => {
+    getRandomFreeLocalPort().then((port) => {
       mdiPort = port;
       const sshCommand = assembleSshCommand(config, true);
       ipcRenderer.send('sshConnect', sshCommand);      
@@ -222,13 +222,27 @@ const parseRemoteRunOptions = function(opt){ // convert user inputs into values 
 }
 
 /* -----------------------------------------------------------
-return a promise that resolves to an array with a single, random, free local port
-this may or may not be free on the server (but probably is)
+return a promise that resolves to a single, random, free local port 
+  this port may or may not be free on the server (but probably is)
+  very rarely, this can result in a local race condition
 ----------------------------------------------------------- */
-const getRandomFreeLocalPort = () => { 
-  const searchRange = 1000;
-  const minPort = 49152; // dynamic port range (never registered to apps)
-  const maxPort = 65535 - searchRange;
-  const startPort = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;
-  return findFreePort(startPort);
-}
+const checkCandidatePort = (port) => new Promise((resolve, reject) => { 
+  const server = net.createServer();
+  server.unref();
+  server.on('error', reject);
+  server.listen(port, () => server.close(() => resolve(port)));
+})
+const getRandomFreeLocalPort = (port) => new Promise((resolve, reject) => { 
+  if(!port) {
+    const searchRange = 1000;
+    const minPort = 1024; 
+    const maxPort = 65535 - searchRange;
+    port = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;    
+  }
+  return checkCandidatePort(port)
+    .then(resolve)
+    .catch(() => { // step forward from a random starting port until a free port is found
+      port++;
+      getRandomFreeLocalPort(port).then(resolve);
+    })
+})

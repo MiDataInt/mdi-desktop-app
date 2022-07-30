@@ -481,7 +481,7 @@ mdi.listeningState((event, match, data) => {
         addTabDiv();
         activeTabIndex = 1;
         setTimeout(() => {
-            xterm.write("\rplease wait a moment for the page to load\n\r");
+            xterm.write("\n\rplease wait a moment for the page to load\n\r");
             mdi.showFrameworkContents(url, proxyRules);
             if(serverPanelWorkingWidth > 0 && // auto-hide server panel unless developing
                !data.developer) toggleServerPanel();
