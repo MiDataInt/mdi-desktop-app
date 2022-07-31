@@ -112,7 +112,7 @@ const createMainWindow = () => {
   });
 
   // load the app page that allows users to configure and launch their server
-  mainWindow.loadFile('index.html').then(() => {
+  mainWindow.loadFile('main.html').then(() => {
     addContentView(docContents, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
     if(devToolsMode) mainWindow.webContents.openDevTools({ mode: devToolsMode });    
   });
