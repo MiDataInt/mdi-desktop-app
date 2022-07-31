@@ -2,7 +2,7 @@
 title: Remote Server Connection
 parent: Configuration Options
 has_children: false
-nav_order: 20
+nav_order: 30
 ---
 
 ## {{page.title}}
@@ -29,7 +29,11 @@ for the remote computer that will serve this installation of the MDI.
 
 ### Identify Key File (advanced)
 
-If supported by your server, you may elect to provide
+If supported by your server, you may provide
 the complete local path to a secure SSH key file, which
-will allow you to log in to the server without having
-to type a password (not supported by UM Great Lakes).
+will allow you to log into the server without having
+to type a password.
+
+Please consult your server administrator for how to set up an SSH key.
+
+SSH keys are not supported by UM Great Lakes.

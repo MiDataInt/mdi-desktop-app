@@ -9,17 +9,17 @@ nav_order: 10
 
 ## {{page.title}}
 
-You must provide file path information to tell the launcher
+You must provide file path(s) that tell the launcher
 where to place and find your MDI installation. In 
-[local mode](server-modes#local-computer-mode)
-these directories should be on your desktop or laptop computer, in a
-[remote server mode](server-modes#remote-server-mode)
+[local mode]({{ /server-modes#local-computer-mode | relative_url }})
+these directories should be on your desktop or laptop computer. In a
+[remote server mode]({{ /server-modes#remote-server-mode | relative_url }})
 they should be on the HPC server.
 
 ### MDI Directory **
 
 You must always provide the full path where you would 
-like to/have already installed the MDI.
+like to / have already installed the MDI.
 
 If **MDI Directory** ends with 'mdi' it will be used as is, otherwise 
 code will be installed into a subfolder named 'mdi'.
@@ -37,7 +37,7 @@ Thus, the following examples are equivalent.
 
 ### Data Directory (advanced)
 
-Most often, all the code and data used by the MDI 
+Most often, all code and data used by the MDI 
 resides under the MDI Directory, e.g., /path/to/mdi.
 
 <div class="entityBox outerBox">

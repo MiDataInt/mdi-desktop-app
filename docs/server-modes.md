@@ -1,5 +1,5 @@
 ---
-title: "Server Modes"
+title: Server Modes
 has_children: false
 nav_order: 20
 ---
@@ -12,7 +12,7 @@ The MDI apps server can be launched on different computers
 depending on your needs. In all cases, you access the data
 analysis apps via a web browser embedded in the launcher app.
 
-### Local Computer Mode 
+### Local computer mode 
 
 **Local Computer** mode uses R to install the web server
 on your desktop or laptop, so that the web browser and web
@@ -35,7 +35,7 @@ Local mode is responsive and secure, but you must manually transfer
 processed data files to your computer, or a provider needs to share
 such files with you, e.g., via email.
 
-### Remote Server Mode 
+### Remote server mode 
 
 A **Remote Server** runs on a 
 remote computer on its login host, either a high performance computing (HPC) resource
@@ -65,13 +65,16 @@ tunnel.
 </div>
 
 In Remote Server mode, you can use the Pipeline Runner to
-execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. It is best for users with an HPC solution accessible by SSH, where the slightly more complex
-installation is a good trade-off for the added capabilities afforded by running the MDI remotely.
+execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. 
+It is best for users with an HPC solution accessible by SSH, where the slightly more complex
+installation is an excellent trade-off for the added capabilities afforded by running the MDI remotely.
 
 ### Cluster Node Mode 
 
 **Cluster Node** mode is similar to Remote Server except that now
-the web server runs on a worker node that is part of a remote server cluster using Slurm as its job scheduler. The server login node proxies web requests from the local computer to the cluster node, again using SSH.
+the web server runs on a worker node that is part of a remote server cluster 
+using Slurm as its job scheduler. The server login node proxies web requests 
+from the local computer to the cluster node, again using SSH.
 
 <div class="entityBox outerBox">
     <p class='entityBoxLabel'>Remote Node Configuration</p>
