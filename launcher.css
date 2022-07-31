@@ -61,17 +61,16 @@ body {
     height: 30px;
     line-height: 30px;
     border-bottom: 1px solid #888;
-    padding: 0 10px;
     width: 100%;
     overflow: hidden;
     white-space: nowrap;
     background-color: #dfdfdf;
 }
-#contents-tab-controls>span {
-    margin-right: 10px;
-}
 .contents-tab:first-of-type, #mdi-docs-tab {
     border-left: 1px solid #888; 
+}
+#contents-tabs {
+    display: inline-block;
 }
 .contents-tab {
     display: inline-block;
@@ -86,13 +85,19 @@ body {
     background-color: #efefef;
 }
 .tab-control-link {
+    display: inline-block;
+    width: 30px;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
+    text-align: center;
 }
 .tab-control-link:hover, .contents-tab:hover {
     color: #00b;
     text-shadow: 1px 1px 1px #efefef;
+}
+#add-tab {
+    border-right: 1px solid #888; 
 }
 .close-tab {
     font-size: 16px;
@@ -100,6 +105,10 @@ body {
 .close-tab:hover {
     color: #b00 !important;
     text-shadow: 1px 1px 1px #efefef;  
+}
+#external-contents-tab, #external-back-arrow {
+    float: right;
+    border-left: 1px solid #888;     
 }
 
 /* -----------------------------------------------------------

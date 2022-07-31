@@ -184,14 +184,14 @@ const showActiveTab = function(){
 }
 ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPanelWidth) => {
   const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
-    for(const tab of mainWindow.getBrowserViews()){
-      tab.setBounds({ 
-        x: x, 
-        width: viewportWidth - x,         
-        y: bodyBorderWidth + tabControlsHeight, 
-        height: viewportHeight - bodyBorderWidth - tabControlsHeight
-      });
-    }
+  for(const tab of mainWindow.getBrowserViews()){
+    tab.setBounds({ 
+      x: x, 
+      width: viewportWidth - x,         
+      y: bodyBorderWidth + tabControlsHeight, 
+      height: viewportHeight - bodyBorderWidth - tabControlsHeight
+    });
+  }
 });
 ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize a new framework contents state
   if(!proxyRules) proxyRules = "direct://";

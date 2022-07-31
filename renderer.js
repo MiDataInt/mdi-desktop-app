@@ -44,9 +44,11 @@ const serverPanelWidth = terminalWidth + 2 * serverPanelPadding;
 const toggleButtonWidth = 20 + 2 * 1; // set in css
 let serverPanelWorkingWidth = serverPanelWidth;
 const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under contentView 
+    const x = serverPanelWorkingWidth + toggleButtonWidth - 2;
     mdi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
     toggleButton.style.left = serverPanelWorkingWidth + "px";
-    tabControls.style.left = (serverPanelWorkingWidth + toggleButtonWidth - 2) + "px";
+    tabControls.style.left = x + "px";
+    tabControls.style.width = (window.innerWidth - x + 1) + "px";
 }
 const resizePanelHeights = function(){ // control xterm terminal height based on viewport and options displays
     const xtermHeight = window.innerHeight - serverConfigPanel.clientHeight - 2 * serverPanelPadding;
