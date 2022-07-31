@@ -7,7 +7,7 @@ This recommended use of inter-process communication (IPC) isolates any third par
 web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
-const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, dialog, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const pty = require('node-pty');
@@ -142,6 +142,10 @@ const addContentView = function(contents, viewportHeight, viewportWidth, x) {
     }
   });
   mainWindow.addBrowserView(contentView); // not setBrowserView since we will support multiple tabs
+  contentView.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);   // redirect external web links to the user's default browser in the OS
+    return { action: 'deny' }; // requires that link have target="_blank", all others do not hit here
+  });
   contentView.setAutoResize({
       width: true,
       height: true
