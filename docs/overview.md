@@ -16,15 +16,15 @@ and to install and run the web server, all from your Windows or Mac computer.
 
 ### Basic steps to using the launcher app
 
-- [Install](installation) the launcher app
-- Select an [MDI Server Mode](server-modes)
-- [Configure](options/00_index) the connection and file path parameters
-- **Connect** to a remote server (if needed)
-- **(Re)Install** the MDI apps server on your computer or server (if needed)
-- **Start** the server to load the apps framework page
+- **[Install](installation)** the launcher app
+- Select an **[MDI Server Mode](server-modes)**
+- **[Configure](options/00_index)** the connection and file path parameters
+- **[Connect]()** to a remote server (if needed)
+- **[(Re)Install]()** the MDI apps server on your computer or server (if needed)
+- **[Start]()** the server to load the apps framework page
 - Upload data or choose an app and do your work
-- **Stop** the server
-- **Save** your configuration for future use
+- **[Stop]()** the server
+- **[Save]()** your configuration for future use
 - Close the app
 
 {% include mdi-project-documentation.md %}

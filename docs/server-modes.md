@@ -4,43 +4,13 @@ has_children: false
 nav_order: 20
 ---
 
+{% include entity-box-style.html %}
+
 ## {{page.title}}
 
 The MDI apps server can be launched on different computers
 depending on your needs. In all cases, you access the data
 analysis apps via a web browser embedded in the launcher app.
-
-<style>
-    .entityBox {
-        border: 1px solid black;
-        border-radius: 10px;
-        padding: 10px;
-        vertical-align: top;
-        font-size: 0.95em;
-        margin: auto;
-        width: fit-content;
-        white-space: nowrap;
-        color: #00274C;
-    }
-    .entityBox p {
-        margin: 0;
-    }
-    .entityBoxLabel {
-        font-weight: bold;
-        margin-bottom: 5px !important;
-    }
-    .outerBox {
-        margin: 20px;
-    }
-    .inlineBox {
-        display: inline-block;
-        margin: 0 5px;
-    }
-    .diagramArrow {
-        font-size: 2em;
-        display: inline-block;
-    }
-</style>
 
 ### Local Computer Mode 
 
