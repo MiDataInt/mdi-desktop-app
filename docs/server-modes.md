@@ -1,14 +1,14 @@
 ---
 title: "Server Modes"
 has_children: false
-nav_order: 10
+nav_order: 20
 ---
 
 ## {{page.title}}
 
 The MDI apps server can be launched on different computers
-depending on your needs. In all cases, you access the apps 
-via a web browser embedded in the launcher app.
+depending on your needs. In all cases, you access the data
+analysis apps via a web browser embedded in the launcher app.
 
 <style>
     .entityBox {
@@ -44,18 +44,20 @@ via a web browser embedded in the launcher app.
 
 ### Local Computer Mode 
 
-**Local Computer** mode will use R to install the web server
+**Local Computer** mode uses R to install the web server
 on your desktop or laptop, so that the web browser and web
-server run on the same local computer.
+server both run on the same local computer.
 
 <div class="entityBox outerBox">
     <p class='entityBoxLabel'>Local Desktop or Laptop Computer</p>
     <div class="entityBox inlineBox">
         <p class='entityBoxLabel'>Web Browser</p>
+        <p>user interface</p>
     </div>
     <div class="diagramArrow">&harr;</div>
     <div class="entityBox inlineBox">
         <p class='entityBoxLabel'>Web Server</p>
+        <p>performs computations</p>
     </div>
 </div>
 
@@ -65,7 +67,7 @@ such files with you, e.g., via email.
 
 ### Remote Server Mode 
 
-In **Remote Server** mode, the server runs on a 
+A **Remote Server** runs on a 
 remote computer on its login host, either a high performance computing (HPC) resource
 or a server dedicated to running the MDI. 
 The local computer connects to the server via a secure SSH
@@ -92,8 +94,8 @@ tunnel.
     </div>
 </div>
 
-In Remote Server mode, you can launch the Pipeline Runner app to
-execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. It is best for users with an HPC solution that can be accessed via SSH, where the slightly more complex
+In Remote Server mode, you can use the Pipeline Runner to
+execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. It is best for users with an HPC solution accessible by SSH, where the slightly more complex
 installation is a good trade-off for the added capabilities afforded by running the MDI remotely.
 
 ### Cluster Node Mode 
@@ -134,9 +136,7 @@ the web server runs on a worker node that is part of a remote server cluster usi
     </div>
 </div>
 
-Cluster Node Mode is best for users wishing to exploit the advantages of a remote
-server whose configuration demands that computational processes run on a dedicated node 
+Cluster Node mode is best for users wishing to exploit the advantages of a remote
+server whose configuration allows for computational processes to run on a dedicated node 
 accessed via an authorized user account, e.g., the University of Michigan Great Lakes 
 server cluster.
-
-<br><br><br>

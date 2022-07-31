@@ -7,16 +7,17 @@ nav_order: 0
 {% include mdi-project-overview.md %} 
 
 This is the documentation for the **MDI Apps Launcher** utility,
-an [Electron](https://www.electronjs.org/) desktop app
-that makes it easy to configure a connection to the computer
+an 
+{% include external-link.html href="https://www.electronjs.org/" text="Electron" %}
+desktop app that makes it easy to configure a connection to the computer
 where you will run the
-[MDI apps framework](https://midataint.github.io/mdi-apps-framework/docs/overview)
-and to install and run the web server, all from your Windows or Mac
-computer.
+[MDI apps framework](/mdi-apps-framework)
+and to install and run the web server, all from your Windows or Mac computer.
 
 ### Basic steps to using the launcher app
 
-- Select an **MDI Server Mode**
+- [Install](installation) the launcher app
+- Select an **MDI Server Mode**[MDI Server Mode](server_modes)
 - Configure the connection and file path parameters
 - **Connect** to a remote server (if needed)
 - **(Re)Install** the MDI apps server on your computer or server (if needed)

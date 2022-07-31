@@ -94,6 +94,7 @@ launch the Electron app in the main renderer, i.e., BrowserWindow
 ----------------------------------------------------------- */
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
+    icon: path.join(__dirname, 'assets/logo/portal_blur.ico'),
     width: startWidth,
     height: startHeight,
     useContentSize: true, // thus, number above are the viewport dimensions
