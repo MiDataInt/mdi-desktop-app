@@ -5,7 +5,7 @@ has_children: false
 nav_order: 20
 ---
 
-## {% page.title %}
+## {{page.title}}
 
 The MDI apps launcher makes it easy to use SSH to connect
 to a remote HPC server, like UM Great Lakes. Simply 

@@ -4,7 +4,7 @@ has_children: false
 nav_order: 10
 ---
 
-## {% page.title %}
+## {{page.title}}
 
 The MDI apps server can be launched on different computers
 depending on your needs. In all cases, you access the apps 
