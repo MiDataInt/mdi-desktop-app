@@ -307,7 +307,7 @@ const presetSelect = document.getElementById('preset');
 const presetsKey = "mdi-launcher-presets";
 const restrictedPresets = ["defaults", "mostRecent", "working"];
 const defaultPreset = { // for quickest creation of a config for UM Great Lakes remote mode
-    mode: "Remote",
+    mode: "Local",
     options: {
         regular:{
             user: "",
