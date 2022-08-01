@@ -37,4 +37,4 @@ you need to install R on your
 desktop or laptop computer via the link below 
 (note that R Studio is not required):
 
-- {% include external-link.html href="https://repo.miserver.it.umich.edu/cran/" text="https://repo.miserver.it.umich.edu/cran/" %}
+- {% include external-link.html href="https://cran.r-project.org/" text="https://cran.r-project.org/" %}

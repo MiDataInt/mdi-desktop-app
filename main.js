@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------
 Overall Electron app logic:
   main.js -  launches app and handles interactions with user OS via ipcMain and dialog
-  preload.js - handles events raised by renderer.js, preprocesses them, and sends to ipcMain
+  preload-main.js - handles events raised by renderer.js, preprocesses them, and sends to ipcMain
   renderer.js - runs the restricted client-side web page in the BrowserWindow Chromium process
 This recommended use of inter-process communication (IPC) isolates any third party
 web content from node.js and other potential security exosures by maintaining
@@ -102,7 +102,7 @@ const createMainWindow = () => {
     height: startHeight,
     useContentSize: true, // thus, number above are the viewport dimensions
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload-main.js'),
       nodeIntegration: false, // security settings (defaults repeated here for clarity)
       contextIsolation: true
     },
@@ -138,7 +138,7 @@ const addContentView = function(contents, viewportHeight, viewportWidth, x) {
   } : mainWindow.getBrowserViews()[0].getBounds(); // framework tabs inherit size from the permanent docs tab
   const contentView = new BrowserView({
     webPreferences: {
-      preload: path.join(__dirname, 'framework.js'),
+      preload: path.join(__dirname, 'preload-content.js'),
       nodeIntegration: false,
       sandbox: true,
       contextIsolation: true
@@ -214,8 +214,14 @@ ipcMain.on("clearFrameworkContents", (event) => {
 ipcMain.on("refreshContents", (event) => {
   getActiveTab().webContents.reload();
 });
+ipcMain.on("contentsBack", (event, listening) => {
+  if(activeTabIndex === 0 || // don't support back button on apps-framework tabs
+     !listening ||
+     Object.values(externalTabIndex).includes(activeTabIndex)
+  ) getActiveTab().webContents.goBack();
+});
 ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
-  activeTabIndex = mainWindow.getBrowserViews().length + 1;
+  activeTabIndex = mainWindow.getBrowserViews().length;
   addContentView(tabContents.framework);
 });
 ipcMain.on("selectTab", (event, tabIndex) => {
@@ -230,6 +236,8 @@ ipcMain.on("closeTab", (event, tabIndex) => {
     if(externalTabIndex[tab] == tabIndex){
       delete externalTabIndex[tab];
       break;
+    } else if(externalTabIndex[tab] > tabIndex){
+      externalTabIndex[tab]--;
     }
   }
 });
@@ -349,7 +357,7 @@ const activateAppSshTerminal = function(){
         ].join(" ")
       ];
       ptyProcess.write(commands.join("\r") + "\r");
-    } else { // remote modes sent an mdi command sequence set by preload.js
+    } else { // remote modes sent as a mdi command sequence set by preload-main.js
       ptyProcess.write(mdi.commands.join("; ") + "\r");
     }
   });  
@@ -385,7 +393,7 @@ const activateAppSshTerminal = function(){
         ].join("")
       ];
       ptyProcess.write(command.join(" ") + "\r");
-    } else { // remote modes sent an mdi command sequence set by preload.js
+    } else { // remote modes sent as a mdi command sequence set by preload-main.js
       ptyProcess.write("export MDI_IS_ELECTRON=TRUE\r"); // let mdi-apps-framework known they are running in Electron
       ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey + "\r");
       ptyProcess.write(mdi.command.join(" ") + "\r");
@@ -434,10 +442,11 @@ const allowedExternalUrls = { // exert explicit control over the external sites 
   Docs:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.io\//, // all other urls/targets are ignored  
   GitHub:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.com\//,
   Globus:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*globus\.org\//,
-  R:        /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
+  CRAN:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
   RStudio:  /^http[s]*:\/\/[a-zA-Z0-9-_.]*rstudio\.com\//,
   Electron: /^http[s]*:\/\/[a-zA-Z0-9-_.]*electronjs\.org\//,
-  Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//
+  Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//,
+  UMich:    /^http[s]*:\/\/[a-zA-Z0-9-_.]*umich\.edu\//
 };
 const showDocumentation = function(url){
   if(url.match(allowedExternalUrls.Docs)) {
@@ -458,24 +467,25 @@ const showDocumentation = function(url){
 ipcMain.on("showDocumentation", (event, url) => showDocumentation(url));
 ipcMain.on("externalLink", (event, data) => {
   if(!data.url || !data.target) return;
-  if(data.target == "Docs") return showDocumentation(url);
-  for(let i = 0; i < allowedExternalUrls.length; i++){
-    if(url.match(Object.values(allowedExternalUrls)[i])){
-      const tab = Object.keys(allowedExternalUrls)[i];
+  if(data.target == "Docs") return showDocumentation(data.url);
+  for(tab of Object.keys(allowedExternalUrls)){
+    if(data.url.match(allowedExternalUrls[tab])){
       tabContents[tab] = {
         url: data.url,
         proxyRules: "direct://"
       };
-      if(externalTabIndex[tab]){
-        activeTabIndex = externalTabIndex[tab]; // allow exactly one tab per external site
+      if(externalTabIndex[tab]){ // allow exactly one tab per external site
+        activeTabIndex = externalTabIndex[tab];
         retryCount = 0;
-        retryShowContents(activeTabIndex, tabContents.Docs).then(() => {
+        retryShowContents(activeTabIndex, tabContents[tab]).then(() => {
           showActiveTab();
-          // mainWindow.webContents.send('showDocumentation', url);
+          mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, false);
         }).catch(console.error);
-      } else {
+      } else { // first instance of a new external target
+        activeTabIndex = mainWindow.getBrowserViews().length;
         addContentView(tabContents[tab]);
-        externalTabIndex[tab] = activeTabIndex; // TODO: purge this when tab closed
+        externalTabIndex[tab] = activeTabIndex;
+        mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, true);
       }
       break;
     }

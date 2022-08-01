@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------
-renderer.js has no access to Node or local system except through preload.js contextBridge
+renderer.js has no access to Node or local system except through preload-main.js contextBridge
 ----------------------------------------------------------- */
 
 /* -----------------------------------------------------------
@@ -81,7 +81,7 @@ const toggleServerPanel = function(){
     const animate = function() {
         if (serverPanelWorkingWidth == target) {
             clearInterval(id);
-            toggleButton.innerHTML = collapsing ? "&gt;" : "&lt;";
+            toggleButton.innerHTML = collapsing ? "&#9658;" : "&#9668;";
         } else {
             serverPanelWorkingWidth += Math.floor(inc * serverPanelWidth / 50); // animation speed set here
             serverPanelWorkingWidth = Math.min(Math.max(serverPanelWorkingWidth, 0), serverPanelWidth);
@@ -505,9 +505,11 @@ mdi.listeningState((event, match, data) => {
 contents BrowserView tab controls
 ----------------------------------------------------------- */
 const refreshContents = document.getElementById('contents-refresh');
+const contentsBack = document.getElementById('contents-back');
 const addTab = document.getElementById('add-tab');
 const contentsTabs = document.getElementById('contents-tabs')
 refreshContents.addEventListener("click", () => mdi.refreshContents());
+contentsBack.addEventListener("click", () => mdi.contentsBack(serverState.listening));
 let nTabs = 1; // the actual number of current tabs
 let tabCounter = 1; // accumulates over all tabs ever opened
 let activeTabIndex = 0; // the docs tab
@@ -546,7 +548,7 @@ const addTabListener = function(tab){ // listen for both tab select and close on
     });
 };
 addTabListener(document.getElementById('mdi-docs-tab')); // initialize the first, permanenent tab
-const addTabDiv = function(){
+const addTabDiv = function(tabName){
     nTabs++; 
     tabCounter++;
     const tabIndex = nTabs - 1;
@@ -558,9 +560,8 @@ const addTabDiv = function(){
     tab.className = "contents-tab";
     tab.dataset.index = tabIndex;
     tab.innerHTML = 
-        (serverState.listening ? "Apps " : "Docs ") + 
-        (tabCounter - (serverState.listening ? 1 : 0)) + 
-        "&nbsp;&nbsp;";
+        tabName || (serverState.listening ? "Apps " : "Docs ") + 
+        (tabCounter - (serverState.listening ? 1 : 0));
     tab.appendChild(closeTab);
     contentsTabs.appendChild(tab);
     addTabListener(tab); // listen for both tab select and close on the tab div
@@ -572,3 +573,7 @@ addTab.addEventListener("click", () => { // add a new tab
     addTabDiv();
 });
 mdi.showDocumentation((event, url) => { setActiveTab(0) });
+mdi.showExternalLink((event, tabName, tabIndex, addTab) => { 
+  if(addTab) addTabDiv(tabName);
+  setActiveTab(tabIndex);
+});

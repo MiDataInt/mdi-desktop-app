@@ -48,7 +48,7 @@ Once the MDI is installed, simply click **Start** to launch the
 MDI Apps Framework, which will load into a web browser on the right
 side of the app.
 
-Notice the **tall vertical >/< button** in the middle or to the
+Notice the **tall vertical open/close button** in the middle or to the
 left of the screen. This button toggles the visibility of the server
 configuration and terminal panels during MDI use. The server is always
 there and reporting its log stream, even when you hide it!
@@ -65,7 +65,7 @@ for information on how to proceed once the interface is running.
 
 ### Stop the server and disconnect
 
-When you are done working, click the tall vertical >/< button
+When you are done working, click the tall vertical open/close button
 to expose the server controls and click **Stop** to end your 
 server session. In remote modes, click **Disconnect**
 to end your SSH session. You must disconnect before re-connecting

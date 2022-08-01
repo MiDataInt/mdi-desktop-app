@@ -39,6 +39,7 @@ body {
 /* server-panel tall vertical show/hide button */
 #server-panel-toggle {
     left: 604px;
+    color: #444;
     border: 1px solid #888;
     border-top: none;
     border-bottom: none;
@@ -66,7 +67,7 @@ body {
     white-space: nowrap;
     background-color: #dfdfdf;
 }
-.contents-tab:first-of-type, #mdi-docs-tab {
+.contents-tab:first-of-type, #mdi-docs-tab, #contents-back {
     border-left: 1px solid #888; 
 }
 #contents-tabs {
@@ -101,6 +102,7 @@ body {
 }
 .close-tab {
     font-size: 16px;
+    margin-left: 5px;
 }
 .close-tab:hover {
     color: #b00 !important;

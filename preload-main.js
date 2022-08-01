@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------
-preload.js has limited access to Node in support of renderer.js as a conduit to main.js
+preload-main.js has limited access to Node in support of renderer.js as a conduit to main.js
 ----------------------------------------------------------- */
 const { contextBridge, ipcRenderer } = require('electron');
 const net = require('net');
@@ -74,10 +74,12 @@ contextBridge.exposeInMainWorld('mdi', {
   showFrameworkContents: (url, proxyRules) => ipcRenderer.send('showFrameworkContents', url, proxyRules),
   clearFrameworkContents: () => ipcRenderer.send('clearFrameworkContents'),
   refreshContents: () => ipcRenderer.send('refreshContents'),
+  contentsBack: (listening) => ipcRenderer.send('contentsBack', listening),
   addTab: (viewportHeight, viewportWidth) => ipcRenderer.send('addTab', viewportHeight, viewportWidth),
   selectTab: (tabIndex) => ipcRenderer.send('selectTab', tabIndex),
   closeTab: (tabIndex) => ipcRenderer.send('closeTab', tabIndex),
-  showDocumentation: (url) => ipcRenderer.on('showDocumentation', url) // in response to mdi-apps-framework
+  showDocumentation: (url) => ipcRenderer.on('showDocumentation', url), // in response to mdi-apps-framework
+  showExternalLink: (tabName, tabIndex, addTab) => ipcRenderer.on('showExternalLink', tabName, tabIndex, addTab) // in response to external a links in content views
 });
 
 /* -----------------------------------------------------------
