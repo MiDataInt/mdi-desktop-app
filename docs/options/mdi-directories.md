@@ -9,7 +9,7 @@ nav_order: 10
 
 ## {{page.title}}
 
-You must provide file path(s) that tell the launcher
+You must provide file path(s) that tell the desktop app
 where to place and find your MDI installation. In 
 [local mode]({{ /server-modes#local-computer-mode | relative_url }})
 these directories should be on your desktop or laptop computer. In a

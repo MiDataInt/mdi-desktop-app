@@ -8,7 +8,7 @@ nav_order: 50
 
 We hope you will return frequently
 to (re)analyze (new) data. To facilitate
-this, the launcher app saves configuration states on your computer 
+this, the desktop app saves configuration states on your computer 
 for fast access on return visits.
 
 Three saved states are always available, others you
@@ -27,7 +27,7 @@ so often you can immediately click Connect and/or Start to get going fast.
 
 ### Working
 
-As you edit the launcher configuration, your changes will
+As you edit the server configuration, your changes will
 be saved temporarily into the Working state.  You can launch
 the server from this state, and save it later as below.
 

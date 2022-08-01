@@ -53,7 +53,7 @@ left of the screen. This button toggles the visibility of the server
 configuration and terminal panels during MDI use. The server is always
 there and reporting its log stream, even when you hide it!
 
-The launcher interface is a minimal web browser. You will
+The desktop interface is a minimal web browser. You will
 start with one Docs and one Apps tab. If desired, you can open 
 additional Apps tabs running from the same server. Documentation links
 in the framework and apps will load into the Docs tab.
@@ -71,7 +71,7 @@ server session. In remote modes, click **Disconnect**
 to end your SSH session. You must disconnect before re-connecting
 to a different server.
 
-You can also just use the normal window controls to close the Launcher app,
+You can also just use the normal window controls to close the desktop app,
 with using the Stop and Disconnect buttons.
 Any servers and jobs running on remote computers will terminate
 once the SSH connection is dropped. 

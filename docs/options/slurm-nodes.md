@@ -31,7 +31,7 @@ Please consult your group leader for the proper value to use.
 The integer time in minutes you would like your web server to run.
 
 **Job Time Minutes** is the _maximum_ time that the server will run - 
-you will terminate the server when you are done using the launcher app
+you will terminate the server when you are done using the desktop app
 to avoid accumulating charges. This option is required by Slurm
 and prevents you from unwittingly launching a server
 that runs perpetually.

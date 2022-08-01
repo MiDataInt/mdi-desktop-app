@@ -26,7 +26,7 @@ const devToolsMode = "detach"; // "left", "undocked", "detach", null
 app constants and working variables
 ----------------------------------------------------------- */
 const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
-const appsLauncherHelpUrl = 'https://midataint.github.io/mdi-apps-launcher/'; // TODO: apps-launcher docs when available
+const desktopAppHelpUrl = 'https://midataint.github.io/mdi-apps-launcher/';
 /* -------------------------------------------------------- */
 const startWidth = 1400;
 const startHeight = 900;
@@ -39,11 +39,11 @@ const bodyBorderWidth = 1;
 /* ----------------------------------------------------------- */
 let mainWindow = null;
 let docContents = {
-  url: appsLauncherHelpUrl,
+  url: desktopAppHelpUrl,
   proxyRules: "direct://"
 };
 let frameworkContents = {  // the same for all active framework tabs
-  url: appsLauncherHelpUrl,
+  url: desktopAppHelpUrl,
   proxyRules: "direct://"
 };
 let activeTabIndex = 0; // where 0 = docs, 1 = first framework tab
@@ -205,7 +205,7 @@ ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize 
 ipcMain.on("clearFrameworkContents", (event) => {
   const tabs = mainWindow.getBrowserViews(); // remove all framework tabs
   if(tabs.length > 1) for(let i = tabs.length - 1; i > 0; i--) mainWindow.removeBrowserView(tabs[i])
-  showDocumentation(appsLauncherHelpUrl);
+  showDocumentation(desktopAppHelpUrl);
 });
 ipcMain.on("refreshContents", (event) => {
   getActiveTab().webContents.reload();

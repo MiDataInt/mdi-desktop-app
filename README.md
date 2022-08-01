@@ -12,7 +12,7 @@ Collectively, pipelines and apps are known as **tools**.
 
 ## Repository contents
 
-This is the repository for the **MDI Apps Launcher** utility,
+This is the repository for the **MDI Desktop App** utility,
 an [Electron](https://www.electronjs.org/) desktop app
 that makes it easy to configure a connection to the computer
 where you will run the

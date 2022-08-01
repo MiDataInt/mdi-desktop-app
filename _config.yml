@@ -1,8 +1,8 @@
 # this is the Jekyll configuration file for the GitHub Pages documentation site
 
 # edit the following title and description to match your repository
-title: "MDI Apps Launcher"
-description: "Electron launcher for the Michigan Data Interface apps framework"
+title: "MDI Desktop App"
+description: "Electron desktop for the Michigan Data Interface apps framework"
 
 # edit the following link used for the upper right navigation
 aux_links:

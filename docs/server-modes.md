@@ -10,7 +10,7 @@ nav_order: 20
 
 The MDI apps server can be launched on different computers
 depending on your needs. In all cases, you access the data
-analysis apps via a web browser embedded in the launcher app.
+analysis apps via a web browser embedded in the desktop app.
 
 ### Local computer mode 
 

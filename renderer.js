@@ -306,7 +306,7 @@ for (const modeRadio of modeRadios) {
 
 // save/load user-defined configurations, i.e., Presets, from localStorage
 const presetSelect = document.getElementById('preset');
-const presetsKey = "mdi-launcher-presets";
+const presetsKey = "mdi-desktop-presets";
 const restrictedPresets = ["defaults", "mostRecent", "working"];
 const defaultPreset = { // for quickest creation of a config for UM Great Lakes remote mode
     mode: "Local",
@@ -378,7 +378,7 @@ presetSelect.addEventListener('change', function(){
     changeToPreset(this.value);
 });
 
-// on page load, show the last state of the launcher, whether saved as a named preset or not
+// on page load, show the last state of the desktop, whether saved as a named preset or not
 updatePresets();
 changeToPreset("mostRecent");
 

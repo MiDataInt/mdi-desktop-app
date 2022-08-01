@@ -1,5 +1,5 @@
 ---
-title: R Accessibility
+title: R Path
 parent: Configuration Options
 has_children: false
 nav_order: 20
@@ -9,7 +9,7 @@ nav_order: 20
 
 The MDI requires that R be installed and available to run
 on the computer that acts as the web server. In addition
-to telling the launcher how to access R, the following options
+to telling the desktop how to access R, the following options
 let you create different MDI installations based on potentially
 multiple versions of R on the same computer.
 

@@ -7,7 +7,7 @@ nav_order: 30
 
 ## {{page.title}}
 
-The MDI Apps Launcher makes it easy to to connect
+The MDI Desktop App makes it easy to to connect
 to a remote HPC server, like UM Great Lakes. Simply 
 provide a valid user login and server address.
 
