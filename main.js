@@ -7,7 +7,7 @@ This recommended use of inter-process communication (IPC) isolates any third par
 web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
-const { app, BrowserWindow, BrowserView, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const pty = require('node-pty');
@@ -38,14 +38,17 @@ const contentsStartX = serverPanelWidth + toggleButtonWidth - 2;
 const bodyBorderWidth = 1;
 /* ----------------------------------------------------------- */
 let mainWindow = null;
-let docContents = {
-  url: desktopAppHelpUrl,
-  proxyRules: "direct://"
+let tabContents = {
+  Docs: {
+    url: desktopAppHelpUrl,
+    proxyRules: "direct://"
+  },
+  framework: {  // the same for all active framework tabs
+    url: desktopAppHelpUrl,
+    proxyRules: "direct://"
+  }
 };
-let frameworkContents = {  // the same for all active framework tabs
-  url: desktopAppHelpUrl,
-  proxyRules: "direct://"
-};
+let externalTabIndex = {}; // for external sites
 let activeTabIndex = 0; // where 0 = docs, 1 = first framework tab
 const showDelay = 1000;
 const maxRetries = 10;
@@ -114,7 +117,7 @@ const createMainWindow = () => {
 
   // load the app page that allows users to configure and launch their server
   mainWindow.loadFile('main.html').then(() => {
-    addContentView(docContents, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
+    addContentView(tabContents.Docs, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
     if(devToolsMode) mainWindow.webContents.openDevTools({ mode: devToolsMode });    
   });
 
@@ -142,10 +145,11 @@ const addContentView = function(contents, viewportHeight, viewportWidth, x) {
     }
   });
   mainWindow.addBrowserView(contentView); // not setBrowserView since we will support multiple tabs
-  contentView.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);   // redirect external web links to the user's default browser in the OS
-    return { action: 'deny' }; // requires that link have target="_blank", all others do not hit here
-  });
+  // LEFT FOR REFERENCE: not preferred since demands target="_blank"; see externalLink action below
+  // contentView.webContents.setWindowOpenHandler(({ url }) => { 
+  //   shell.openExternal(url);   // redirect external web links to the user's default browser in the OS
+  //   return { action: 'deny' }; // requires that link have target="_blank", all others do not hit here
+  // });
   contentView.setAutoResize({
       width: true,
       height: true
@@ -195,12 +199,12 @@ ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPan
 });
 ipcMain.on("showFrameworkContents", (event, url, proxyRules) => { // initialize a new framework contents state
   if(!proxyRules) proxyRules = "direct://";
-  frameworkContents = { // set the content metadata for this and all sister tabs
+  tabContents.framework = { // set the content metadata for this and all sister tabs
     url: url,
     proxyRules: proxyRules
   };  
   activeTabIndex = 1;  
-  addContentView(frameworkContents);
+  addContentView(tabContents.framework);
 });
 ipcMain.on("clearFrameworkContents", (event) => {
   const tabs = mainWindow.getBrowserViews(); // remove all framework tabs
@@ -212,7 +216,7 @@ ipcMain.on("refreshContents", (event) => {
 });
 ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
   activeTabIndex = mainWindow.getBrowserViews().length + 1;
-  addContentView(frameworkContents);
+  addContentView(tabContents.framework);
 });
 ipcMain.on("selectTab", (event, tabIndex) => {
   activeTabIndex = tabIndex;
@@ -222,6 +226,12 @@ ipcMain.on("closeTab", (event, tabIndex) => {
   if(activeTabIndex >= tabIndex) activeTabIndex = tabIndex - 1;
   mainWindow.removeBrowserView(mainWindow.getBrowserViews()[tabIndex])
   showActiveTab();
+  for(tab of Object.keys(externalTabIndex)){
+    if(externalTabIndex[tab] == tabIndex){
+      delete externalTabIndex[tab];
+      break;
+    }
+  }
 });
 
 /* -----------------------------------------------------------
@@ -420,20 +430,54 @@ const activateServerTerminal = function(){
 /* -----------------------------------------------------------
 handle IPC from mdi-apps-framework to Electron
 ----------------------------------------------------------- */
-const showDocumentation = function(url){
-  docContents = {
-    url: url,
-    proxyRules: "direct://"
-  };
-  activeTabIndex = 0; // i.e., the permanent docs tab
-  retryCount = 0;
-  retryShowContents(activeTabIndex, docContents).then(() => {
-    showActiveTab();
-    mainWindow.webContents.send('showDocumentation', url);
-  }).catch(console.error);
+const allowedExternalUrls = { // exert explicit control over the external sites we support
+  Docs:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.io\//, // all other urls/targets are ignored  
+  GitHub:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.com\//,
+  Globus:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*globus\.org\//,
+  R:        /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
+  RStudio:  /^http[s]*:\/\/[a-zA-Z0-9-_.]*rstudio\.com\//,
+  Electron: /^http[s]*:\/\/[a-zA-Z0-9-_.]*electronjs\.org\//,
+  Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//
 };
-ipcMain.on("showDocumentation", (event, url) => {
-  // TODO: further sanitize incoming URL against nefarious requests?
-  if(url.match(/https:\/\/.+\.github\.io\//)) showDocumentation(url)
-  else console.log("bad documentation url: " + url);
+const showDocumentation = function(url){
+  if(url.match(allowedExternalUrls.Docs)) {
+    tabContents.Docs = {
+      url: url,
+      proxyRules: "direct://"
+    };
+    activeTabIndex = 0; // i.e., the permanent docs tab
+    retryCount = 0;
+    retryShowContents(activeTabIndex, tabContents.Docs).then(() => {
+      showActiveTab();
+      mainWindow.webContents.send('showDocumentation', url);
+    }).catch(console.error);
+  } else {
+    console.log("bad documentation url: " + url);
+  }
+};
+ipcMain.on("showDocumentation", (event, url) => showDocumentation(url));
+ipcMain.on("externalLink", (event, data) => {
+  if(!data.url || !data.target) return;
+  if(data.target == "Docs") return showDocumentation(url);
+  for(let i = 0; i < allowedExternalUrls.length; i++){
+    if(url.match(Object.values(allowedExternalUrls)[i])){
+      const tab = Object.keys(allowedExternalUrls)[i];
+      tabContents[tab] = {
+        url: data.url,
+        proxyRules: "direct://"
+      };
+      if(externalTabIndex[tab]){
+        activeTabIndex = externalTabIndex[tab]; // allow exactly one tab per external site
+        retryCount = 0;
+        retryShowContents(activeTabIndex, tabContents.Docs).then(() => {
+          showActiveTab();
+          // mainWindow.webContents.send('showDocumentation', url);
+        }).catch(console.error);
+      } else {
+        addContentView(tabContents[tab]);
+        externalTabIndex[tab] = activeTabIndex; // TODO: purge this when tab closed
+      }
+      break;
+    }
+  }
 });
