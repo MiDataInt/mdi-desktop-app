@@ -10,15 +10,16 @@ jobs:
     #   matrix:
     #     os: [macos-latest, windows-latest] # , ubuntu-latest
     steps:
-      - name: repository checkout
-        uses: actions/checkout@v3
-      # - uses: actions/setup-node@v3
-      #   with:
-      #     node-version: 16
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - run: ls
       - run: npm install
       - run: ls node_modules
       - run: npm run dist
+      - run: ls 
+      - run: ls dist
       # - uses: samuelmeuli/action-electron-builder@v1.6.0
       #   with:
       #     github_token: ${{ secrets.github_token }}
