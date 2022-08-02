@@ -15,12 +15,12 @@ jobs:
       # - uses: actions/setup-node@v3
       #   with:
       #     node-version: 16
-      - name: ls -l
-        run: ls -l
+      - name: ls
+        run: ls
       - name: npm install
         run: npm install
-      - name: ls -l node_modules
-        run: ls -l node_modules
+      - name: ls node_modules
+        run: ls node_modules
       - run: npm run dist
       # - uses: samuelmeuli/action-electron-builder@v1.6.0
       #   with:
