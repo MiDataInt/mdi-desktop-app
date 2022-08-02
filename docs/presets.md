@@ -8,11 +8,10 @@ nav_order: 50
 
 We hope you will return frequently
 to (re)analyze (new) data. To facilitate
-this, the desktop app saves configuration states on your computer 
-for fast access on return visits.
-
+this, the MDI Desktop saves configuration states on your computer 
+for fast access on return visits. 
 Three saved states are always available, others you
-can create and manage.
+create and manage.
 
 ### Default
 
@@ -21,7 +20,7 @@ parameters to start a new configuration.
 
 ### Most Recent
 
-The **Most Recent** state holds the configuration parameters
+The Most Recent state holds the configuration parameters
 of the last time you connected to a server. It is how the app loads, 
 so often you can immediately click Connect and/or Start to get going fast.
 
@@ -29,15 +28,13 @@ so often you can immediately click Connect and/or Start to get going fast.
 
 As you edit the server configuration, your changes will
 be saved temporarily into the Working state.  You can launch
-the server from this state, and save it later as below.
+the server from this state and save it later.
 
 ### Saved presets
 
 Once you have a configuration you like, simply
 click **Save**, give it a useful name, and it will be
 available as a preset option on future visits.
-
 Later, you can also select a saved state and **Delete** it.
-
-There is no limit on the number of saved configurations, 
+There is no limit on the number of saved configurations - 
 use them to organize your work as matches your needs.

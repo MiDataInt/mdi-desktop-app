@@ -18,7 +18,7 @@ must already be available via the `PATH` environment variable.
 
 ### R Bin Directory (local mode)
 
-If provided, **R Bin Directory** must be a path to a folder 
+If provided, `R Bin Directory` must be a path to a folder 
 where file 'Rscript' or 'Rscript.exe' can be found.
 
 **Examples**
@@ -28,7 +28,7 @@ where file 'Rscript' or 'Rscript.exe' can be found.
 
 ### R Load Command (remote, node modes)
 
-If provided, **R Load Command** will be called on a remote
+If provided, `R Load Command` will be called on a remote
 server prior to attempting to launch the MDI. 
 R Load Command must make 'Rscript' available 
 via the system <code>PATH</code> environment variable.

@@ -10,13 +10,13 @@ nav_order: 20
 
 The MDI apps server can be launched on different computers
 depending on your needs. In all cases, you access the data
-analysis apps via a web browser embedded in the desktop app.
+analysis apps via a web browser embedded into the desktop app.
 
 ### Local computer mode 
 
-**Local Computer** mode uses R to install the web server
+Local Computer mode uses R to install the web server
 on your desktop or laptop, so that the web browser and web
-server both run on the same local computer.
+server run on the same local computer.
 
 <div class="entityBox outerBox">
     <p class='entityBoxLabel'>Local Desktop or Laptop Computer</p>
@@ -37,7 +37,7 @@ such files with you, e.g., via email.
 
 ### Remote server mode 
 
-A **Remote Server** runs on a 
+A Remote Server runs on a 
 remote computer on its login host, either a high performance computing (HPC) resource
 or a server dedicated to running the MDI. 
 The local computer connects to the server via a secure SSH
@@ -65,15 +65,13 @@ tunnel.
 </div>
 
 In Remote Server mode, you can use the Pipeline Runner to
-execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. 
-It is best for users with an HPC solution accessible by SSH, where the slightly more complex
-installation is an excellent trade-off for the added capabilities afforded by running the MDI remotely.
+execute Stage 1 pipelines and then analyze their output using Stage 2 apps on the same server. For users with an HPC solution accessible by SSH, the slightly more complex configuration is an excellent trade-off for the added capabilities afforded by running the MDI remotely.
 
 ### Cluster Node Mode 
 
-**Cluster Node** mode is similar to Remote Server except that now
+Cluster Node mode is similar to Remote Server except that now
 the web server runs on a worker node that is part of a remote server cluster 
-using Slurm as its job scheduler. The server login node proxies web requests 
+running Slurm as its job scheduler. The server login node proxies web requests 
 from the local computer to the cluster node, again using SSH.
 
 <div class="entityBox outerBox">
@@ -111,5 +109,5 @@ from the local computer to the cluster node, again using SSH.
 
 Cluster Node mode is best for users wishing to exploit the advantages of a remote
 server whose configuration allows for computational processes to run on a dedicated node 
-accessed via an authorized user account, e.g., the University of Michigan Great Lakes 
+accessed via an authorized user account, e.g., the UM Great Lakes 
 server cluster.

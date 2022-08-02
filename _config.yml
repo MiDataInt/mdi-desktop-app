@@ -7,7 +7,7 @@ description: "Electron desktop for the Michigan Data Interface apps framework"
 # edit the following link used for the upper right navigation
 aux_links:
   "Go To Repo on GitHub":
-    - "https://github.com/MiDataInt/mdi-apps-launcher"
+    - "https://github.com/MiDataInt/mdi-desktop-app"
 
 
 # do not edit any line below this line

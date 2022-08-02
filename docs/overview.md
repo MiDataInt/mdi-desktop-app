@@ -6,14 +6,16 @@ nav_order: 0
 
 {% include mdi-project-overview.md %} 
 
-This is the documentation for the **MDI Desktop App**, an 
+The **MDI Desktop App** is an 
 {% include external-link.html href="https://www.electronjs.org/" text="Electron" %}
-desktop app that makes it easy to configure a connection to the computer
-where you will run the
-[MDI apps framework](/mdi-apps-framework)
+app that makes it easy to configure a connection to the computer
+where you will run the [MDI apps framework](/mdi-apps-framework)
 and to install and run the web server, all from your Windows or Mac computer.
 
-### Basic steps to using the desktop app
+There are other ways to run the apps framework, but the MDI Desktop App
+is recommended as the simplest way to bring all MDI tools to your computer.
+
+### Basic steps for using the desktop app
 
 - **[Install](installation)** the desktop app
 - Select an **[MDI Server Mode](server-modes)**

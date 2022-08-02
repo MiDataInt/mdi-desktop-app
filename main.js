@@ -26,7 +26,7 @@ const devToolsMode = "detach"; // "left", "undocked", "detach", null
 app constants and working variables
 ----------------------------------------------------------- */
 const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
-const desktopAppHelpUrl = 'https://midataint.github.io/mdi-apps-launcher/';
+const desktopAppHelpUrl = 'https://midataint.github.io/mdi-desktop-app/';
 /* -------------------------------------------------------- */
 const startWidth = 1400;
 const startHeight = 900;
