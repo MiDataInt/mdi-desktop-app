@@ -1,7 +1,8 @@
 name: "Electron Builder"
 on:
-  # release:
-  #   types: [published]
+  push:
+    paths:
+      - 'package.json' # only release when version changes
   workflow_dispatch:
 env:
   GH_TOKEN: ${{ secrets.github_token }}
@@ -17,20 +18,17 @@ jobs:
         with:
           node-version: 16
           cache: 'npm'
-      - run: npm install
-      - name: Run npm run ci (Windows)
+      - run: npm clean-install
+      # - run: npm run build # if you need it
+      - name: Run npm run release (Windows)
         if: runner.os == 'Windows'
-        env: 
-          XYZ: ${{ runner.os }}
-        run: npm run ci
-      - name: Run npm run ci (macOS)
+        # env: 
+          # CSC_LINK: ${{ secrets.win_certs }}
+          # CSC_KEY_PASSWORD: ${{ secrets.win_certs_password }}
+        run: npm run release
+      - name: Run npm run release (macOS)
         if: runner.os == 'macOS'
-        env: 
-          XYZ: ${{ runner.os }}
-        run: npm run ci
-
-# CSC_LINK, CSC_KEY_PASSWORD
-# ${{ secrets.win_certs }}
-# ${{ secrets.win_certs_password }}
-# ${{ secrets.mac_certs }}
-# ${{ secrets.mac_certs_password }}
+        # env: 
+          # CSC_LINK: ${{ secrets.mac_certs }}
+          # CSC_KEY_PASSWORD: ${{ secrets.mac_certs_password }}
+        run: npm run release
