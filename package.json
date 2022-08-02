@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "ci": "electron-builder --publish always"
   },
   "author": "Thomas E. Wilson",
   "license": "MIT",
@@ -22,8 +23,18 @@
   },
   "build": {
     "appId": "MichiganDataInterface.DesktopApp",
+    "directories": {
+      "buildResources": "assets"
+    },
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "publish": "github",
+      "icon": "logo/portal_blur.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "publish": "github",
+      "icon": "logo/portal_blur.png"
     }
   }
 }
