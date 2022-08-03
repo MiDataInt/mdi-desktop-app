@@ -27,7 +27,7 @@
       "buildResources": "assets"
     },
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "publish": "github",
       "icon": "logo/portal_blur.ico"
     },
