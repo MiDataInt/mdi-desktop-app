@@ -11,6 +11,9 @@ creates a controlled API for renderer.js to talk to main.js as mdi.method()
 ----------------------------------------------------------- */
 contextBridge.exposeInMainWorld('mdi', {
 
+  // debug auto-update
+  autoUpdateStatus: (message) => ipcRenderer.on('autoUpdateStatus', message),
+
   // dynamically set the app window title
   setTitle: (mode, connection) => ipcRenderer.send('setTitle', mode, connection),
 
