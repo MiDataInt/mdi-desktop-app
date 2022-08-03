@@ -1,9 +1,10 @@
 {
   "name": "mdi-desktop-app",
-  "version": "v0.0.1",
+  "version": "v0.0.3",
   "description": "Electron desktop for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
+    "dev": "electron . MDI_DEV_TOOLS",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
@@ -27,9 +28,9 @@
       "buildResources": "assets"
     },
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "publish": "github",
-      "icon": "logo/portal_blur.ico"
+      "icon": "logo/portal_blur.png"
     },
     "mac": {
       "target": "dmg",

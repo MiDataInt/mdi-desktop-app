@@ -277,7 +277,7 @@ const setServerMode = function(mode, suppressWorking){
             if(input.type === "checkbox"){
                 input.checked = value;
             } else {
-                input.value = value;
+                input.value = value || "";
             }
         }
     }
@@ -319,7 +319,7 @@ const defaultPreset = { // for quickest creation of a config for UM Great Lakes 
             mdiDirectoryRemote: "~/mdi",
             mdiDirectoryLocal: "~/mdi",
             rLoadCommand: "",
-            rDirectory: "",
+            rscriptPath: "",
             developer: false
         },
         advanced:{

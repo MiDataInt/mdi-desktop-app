@@ -1,4 +1,4 @@
-## Repository contents
+## MDI Desktop App
 
 The [Michigan Data Interface](https://midataint.github.io/) (MDI) 
 is a framework for developing, installing and running 

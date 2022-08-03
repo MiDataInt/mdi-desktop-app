@@ -1,5 +1,5 @@
 ---
-title: R Path
+title: R Paths
 parent: Configuration Options
 has_children: false
 nav_order: 20
@@ -14,17 +14,18 @@ let you create different MDI installations based on potentially
 multiple versions of R on the same computer.
 
 If these options are left blank, 'Rscript' or 'Rscript.exe' 
-must already be available via the `PATH` environment variable.
+must already be available via the `PATH` environment variable,
+however, it is recommended to explicitly set the R path.
 
-### R Bin Directory (local mode)
+### Rscript Path (local mode)
 
-If provided, `R Bin Directory` must be a path to a folder 
-where file 'Rscript' or 'Rscript.exe' can be found.
+If provided, `Rscript Path` must be a full path to a valid
+'Rscript' or 'Rscript.exe' executable file.
 
 **Examples**
 
-- **Windows**: C:\Program Files\R\R-4.1.0\bin
-- **Mac or Linux**: /path/to/R-4.1.0/bin
+- **Windows**: C:\Program Files\R\R-4.1.0\bin\Rscript.exe
+- **Mac or Linux**: /path/to/R-4.1.0/bin/Rscript
 
 ### R Load Command (remote, node modes)
 

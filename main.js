@@ -1,31 +1,32 @@
 /* -----------------------------------------------------------
 Overall Electron app logic:
-  main.js -  launches app and handles interactions with user OS via ipcMain and dialog
-  preload-main.js - handles events raised by renderer.js, preprocesses them, and sends to ipcMain
-  renderer.js - runs the restricted client-side web page in the BrowserWindow Chromium process
+  main.js          launches app and handles interactions with user OS via ipcMain and dialog
+  preload-main.js  handles events raised by renderer.js, preprocesses them, and sends to ipcMain
+  renderer.js      runs the restricted client-side web page in the BrowserWindow chromium process
 This recommended use of inter-process communication (IPC) isolates any third party
 web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
+// dependencies required to load the main page
 const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
-const fs = require('fs');
 const path = require('path');
-const pty = require('node-pty');
-const { spawn } = require('child_process');
-const prompt = require('electron-prompt');
-const crypto = require('crypto');
 app.commandLine.appendSwitch('disable-http-cache');
-// app.commandLine.appendSwitch('ignore-gpu-blacklist');
-
-/* -----------------------------------------------------------
-developer tools
------------------------------------------------------------ */
-const devToolsMode = "detach"; // "left", "undocked", "detach", null
+// deferred dependencies loaded on demand for faster app loading
+let mods = {};
+const mod = function(module){
+  if(!mods[module]) mods[module] = require(module);
+  return mods[module];
+}
 
 /* -----------------------------------------------------------
 app constants and working variables
 ----------------------------------------------------------- */
-const mdiRemoteKey = crypto.randomBytes(16).toString('hex'); // for authorizing http requests in remote and server modes
+const isDev = process.argv.includes("MDI_DEV_TOOLS");
+let mdiRemoteKey_ = null; // for authorizing http requests in remote and server modes
+const mdiRemoteKey = function(){ // key set once on every app instance, i.e., user encounter
+  if(!mdiRemoteKey_) mdiRemoteKey_ = mod('crypto').randomBytes(16).toString('hex');
+  return mdiRemoteKey_;
+}
 const desktopAppHelpUrl = 'https://midataint.github.io/mdi-desktop-app/';
 /* -------------------------------------------------------- */
 const startWidth = 1400;
@@ -69,9 +70,6 @@ Electron app windows and flow control, see:
   https://www.electronjs.org/docs/latest/tutorial/quick-start
   https://www.electronjs.org/docs/latest/api/app#apprequestsingleinstancelockadditionaldata
 ----------------------------------------------------------- */
-// if (require('electron-squirrel-startup')) { // to prevent multiple app loads when running Setup.exe
-//   return app.quit();
-// } else 
 if (app.requestSingleInstanceLock({})) { // allow at most a single instance of the app
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
     if (mainWindow) { // focus an existing window
@@ -116,14 +114,12 @@ const createMainWindow = () => {
   });
 
   // load the app page that allows users to configure and launch their server
-  mainWindow.loadFile('main.html').then(() => {
+  mainWindow.loadFile('main.html').then(() => { // then load/activate additional contents into the app
     addContentView(tabContents.Docs, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
-    if(devToolsMode) mainWindow.webContents.openDevTools({ mode: devToolsMode });    
+    activateAppSshTerminal();
+    activateServerTerminal();
+    if(isDev) mainWindow.webContents.openDevTools({ mode: "detach" });    
   });
-
-   // asynchronously activate the MDI server connections
-   setTimeout(activateAppSshTerminal, 100);
-   setTimeout(activateServerTerminal, 200);
 };
 
 /* -----------------------------------------------------------
@@ -166,8 +162,8 @@ const addContentView = function(contents, viewportHeight, viewportWidth, x) {
 };
 const retryShowContents = (tabIndex, contents) => new Promise((resolve, reject) => { 
   retryCount++;
-  console.log("attempt #" + retryCount + " to load " + contents.url + " via proxy " + contents.proxyRules);
-  mainWindow.getBrowserViews()[tabIndex].webContents.loadURL(contents.url + "?mdiRemoteKey=" + mdiRemoteKey) // send our access key/nonce
+  if(isDev) console.log("attempt #" + retryCount + " to load " + contents.url + " via proxy " + contents.proxyRules);
+  mainWindow.getBrowserViews()[tabIndex].webContents.loadURL(contents.url + "?mdiRemoteKey=" + mdiRemoteKey()) // send our access key/nonce
     .then(resolve)
     .catch((e) => {
       setTimeout(() => {
@@ -245,22 +241,11 @@ ipcMain.on("closeTab", (event, tabIndex) => {
 /* -----------------------------------------------------------
 enable local file system search for an identity file, R executable, MDI directory, etc.
 ----------------------------------------------------------- */
-const getRBinPathDefault = function(){
-  let path = "";
-  if(isWindows){
-    const rootFolder = 'C:\\Program Files\\R';
-    if(fs.existsSync(rootFolder)){
-      const versions = fs.readdirSync(rootFolder);
-      if(versions.length >= 1) path = rootFolder +  '\\' + versions[versions.length - 1] + '\\bin';
-    }
-  }
-  return path; 
-}
 ipcMain.handle('getLocalFile', (event, options) => {
   let defaultPath = options.defaultPath;
-  if(defaultPath === "rBinPathDefault") defaultPath = getRBinPathDefault();
+  if(defaultPath === "rscriptPathDefault") defaultPath = getRscriptPathDefault();
   if(defaultPath === "sshDir") defaultPath = app.getPath('home') + fsDelimiter + ".ssh";
-  if(!defaultPath || !fs.existsSync(defaultPath)) defaultPath = app.getPath('home');
+  if(!defaultPath || !mod('fs').existsSync(defaultPath)) defaultPath = app.getPath('home');
   const files = dialog.showOpenDialogSync(mainWindow, {
     defaultPath: defaultPath,
     properties: [
@@ -279,7 +264,7 @@ ipcMain.on('showMessageBoxSync', (event, options) => {
   if(options.mdiEvent) mainWindow.webContents.send(options.mdiEvent, result); 
 });
 ipcMain.on('showPrompt', (event, options) => {
-  prompt(options).then((result) => {
+  mod("electron-prompt")(options).then((result) => {
     if(result) mainWindow.webContents.send(options.mdiEvent, result); 
   }).catch(console.error);
 });
@@ -291,7 +276,7 @@ const activateAppSshTerminal = function(){
 
   // open a pseudo-terminal to the local computer's command shell
   // this terminal will receive appropriate subsequent connect/install/run commands
-  let ptyProcess = pty.spawn(shellCommand, [], {
+  let ptyProcess = mod("node-pty").spawn(shellCommand, [], {
     name: 'mdi-remote-terminal',
     cols: 80,
     rows: 24,
@@ -341,22 +326,24 @@ const activateAppSshTerminal = function(){
   // these actions are always required to launch the mdi-apps-framework
   ipcMain.on('installServer', (event, mdi) => {
     if(mdi.mode == "Local"){ // parse local command here due to OS dependency
-      const rScript = getRScript(mdi);
-      const commands = [
-        [
-          rScript, "-e", // make sure remotes is installed
-          "\"if(require('remotes', character.only = TRUE) == FALSE) install.packages('remotes', repos = 'https://cloud.r-project.org', Ncpus = 4)\""
-        ].join(" "),
-        [
-          rScript, "-e", // make sure mdi-manager is installed
-          "\"remotes::install_github('MiDataInt/mdi-manager')\""
-        ].join(" "),
-        [
-          rScript, "-e", // install the mdi
-          ["\"mdi::install('", mdi.opt.mdiDir, "', hostDir = '", mdi.opt.hostDir, "')\""].join("")
-        ].join(" ")
-      ];
-      ptyProcess.write(commands.join("\r") + "\r");
+      parseMdiPath(mdi).then((mdi) => {
+        const rScript = getRScript(mdi);
+        const commands = [
+          [
+            rScript.target, "-e", // make sure remotes is installed
+            "\"" + rScript.libPaths + "; if(require('remotes', character.only = TRUE) == FALSE) install.packages('remotes', repos = 'https://cloud.r-project.org', Ncpus = 4)\""
+          ].join(" "),
+          [
+            rScript.target, "-e", // make sure mdi-manager is installed
+            "\"" + rScript.libPaths + "; remotes::install_github('MiDataInt/mdi-manager')\""
+          ].join(" "),
+          [
+            rScript.target, "-e", // install the mdi
+            ["\"" + rScript.libPaths + "; mdi::install('", mdi.opt.mdiDir, "', hostDir = '", mdi.opt.hostDir, "')\""].join("")
+          ].join(" ")
+        ];
+        ptyProcess.write(commands.join("\r") + "\r");
+      }).catch(() => {});
     } else { // remote modes sent as a mdi command sequence set by preload-main.js
       ptyProcess.write(mdi.commands.join("; ") + "\r");
     }
@@ -376,26 +363,28 @@ const activateAppSshTerminal = function(){
       }
     };
     if(mdi.mode == "Local"){ // parse local command here due to OS dependency
-      ptyProcess.write(isWindows ? "$env:MDI_IS_ELECTRON='TRUE'\r" : "export MDI_IS_ELECTRON=TRUE\r"); 
-      const rScript = getRScript(mdi);
-      const command = [
-        rScript, "-e",
-        [
-          "\"mdi::run('", mdi.opt.mdiDir, 
-          "', hostDir = '", mdi.opt.hostDir, 
-          "', dataDir = '", mdi.opt.dataDir, 
-          "', port = ", "NULL", // R Shiny auto-selects local ports
-          ", install = ", mdi.opt.install, 
-          ", debug = ", "TRUE", // mdi.opt.developer,
-          ", developer = ", mdi.opt.developer, // as string
-          ", browser = ", "FALSE", // if TRUE, an external Chrome window is spawned
-          ")\"" // install = TRUE
-        ].join("")
-      ];
-      ptyProcess.write(command.join(" ") + "\r");
+      parseMdiPath(mdi).then((mdi) => {
+        ptyProcess.write(isWindows ? "$env:MDI_IS_ELECTRON='TRUE'\r" : "export MDI_IS_ELECTRON=TRUE\r"); 
+        const rScript = getRScript(mdi);
+        const command = [
+          rScript.target, "-e",
+          [
+            "\"" + rScript.libPaths + "; mdi::run('", mdi.opt.mdiDir, 
+            "', hostDir = '", mdi.opt.hostDir, 
+            "', dataDir = '", mdi.opt.dataDir, 
+            "', port = ", "NULL", // R Shiny auto-selects local ports
+            ", install = ", mdi.opt.install, 
+            ", debug = ", "TRUE", // mdi.opt.developer,
+            ", developer = ", mdi.opt.developer, // as string
+            ", browser = ", "FALSE", // if TRUE, an external Chrome window is spawned
+            ")\"" // install = TRUE
+          ].join("")
+        ];
+        ptyProcess.write(command.join(" ") + "\r");        
+      }).catch(() => {});
     } else { // remote modes sent as a mdi command sequence set by preload-main.js
       ptyProcess.write("export MDI_IS_ELECTRON=TRUE\r"); // let mdi-apps-framework known they are running in Electron
-      ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey + "\r");
+      ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey() + "\r");
       ptyProcess.write(mdi.command.join(" ") + "\r");
     }
   });  
@@ -410,18 +399,13 @@ const activateAppSshTerminal = function(){
     });
   });  
 }
-const getRScript = function(mdi){ // for local MDI calls
-  const delimiter = isWindows ? '\\' : '/';
-  let rScript = mdi.opt.regular.rDirectory ? (mdi.opt.regular.rDirectory + delimiter + "Rscript") : "Rscript";
-  if(isWindows) rScript = rScript.replace(/ /g, "' '"); // deal with spaces in names
-  return rScript;
-}
 
 /* -----------------------------------------------------------
 launch a host terminal external to the electron app with an interactive [ssh] session 
 to give users an additional way to explore a server machine while the MDI is running
 ----------------------------------------------------------- */
 const activateServerTerminal = function(){
+  const { spawn } = require('child_process');
   ipcMain.on('spawnTerminal', (event, sshCommand) => {
     if(isWindows){ // 'start' required to create a stable external window
       const shellCommand = "cmd.exe"; // not powershell
@@ -433,6 +417,52 @@ const activateServerTerminal = function(){
       spawn('ssh', sshCommand);
     }
   })  
+}
+
+/* -----------------------------------------------------------
+MDI local file path utility functions
+----------------------------------------------------------- */
+const parseMdiPath = (mdi) => new Promise((resolve, reject) => { 
+  // if missing, add '/mdi' to MDI Directory
+  const tail ='/mdi';
+  if(!mdi.opt.mdiDir.endsWith(tail)) mdi.opt.mdiDir = mdi.opt.mdiDir + tail;  
+  // resolve if either MDI Directory or its parent exists  
+  if(mod('fs').existsSync(mdi.opt.mdiDir)) return resolve(mdi);
+  if(mod('fs').existsSync(path.dirname(mdi.opt.mdiDir))) {
+    mod('fs').mkdirSync(mdi.opt.mdiDir);
+    return resolve(mdi);
+  };
+  dialog.showMessageBoxSync(mainWindow, {
+    title: "Bad MDI Directory",
+    message: "MDI Directory is not a valid local path for MDI installation.",
+    type: "warning"
+  });
+  reject();
+});
+const getRScript = function(mdi){ // for local MDI calls
+  const rScript = mdi.opt.regular.rscriptPath;
+  const hash = mod('crypto').createHash('md5').update(rScript).digest("hex");
+  const rLibsPath = mdi.opt.mdiDir + '/library/';
+  if(!mod('fs').existsSync(rLibsPath)) mod('fs').mkdirSync(rLibsPath);
+  const rLibPath = rLibsPath + hash;
+  if(!mod('fs').existsSync(rLibPath)) mod('fs').mkdirSync(rLibPath);
+  const libPaths = ".libPaths(gsub('\\\\', '/', '" + rLibPath + "', fixed = TRUE))"
+  return {
+    target: rScript.replace(/ /g, "' '"), // deal with spaces in names on Windows,
+    libPaths: libPaths
+  };
+}
+const getRscriptPathDefault = function(){
+  let path = "";
+  if(isWindows){
+    const rootFolder = 'C:\\Program Files\\R';
+    if(mod('fs').existsSync(rootFolder)){
+      const versions = mod('fs').readdirSync(rootFolder);
+      if(versions.length >= 1) path = rootFolder +  '\\' + versions[versions.length - 1] + '\\bin\\Rscript.exe';
+    }
+  }
+  // TODO: parse defaults for Mac
+  return path; 
 }
 
 /* -----------------------------------------------------------
@@ -461,7 +491,7 @@ const showDocumentation = function(url){
       mainWindow.webContents.send('showDocumentation', url);
     }).catch(console.error);
   } else {
-    console.log("bad documentation url: " + url);
+    if(isDev) console.log("bad documentation url: " + url);
   }
 };
 ipcMain.on("showDocumentation", (event, url) => showDocumentation(url));

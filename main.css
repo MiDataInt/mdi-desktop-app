@@ -166,7 +166,7 @@ select {
 
 /* server action buttons */
 .buttons button{
-    display: inline-block;
+    display: none;
     width: 100px;
     height: 35px;
     margin: 5px;
