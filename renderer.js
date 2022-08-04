@@ -44,9 +44,9 @@ const serverPanelPadding = 10;
 const serverPanelWidth = terminalWidth + 2 * serverPanelPadding;
 const toggleButtonWidth = 20 + 2 * 1; // set in css
 let serverPanelWorkingWidth = serverPanelWidth;
-const resizePanelWidths = function(){ // control the horizontal display, for hiding serverPanel under contentView 
+const resizePanelWidths = function(skipIpc){ // control the horizontal display, for hiding serverPanel under contentView 
     const x = serverPanelWorkingWidth + toggleButtonWidth - 2;
-    mdi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
+    if(!skipIpc) mdi.resizePanelWidths(window.innerHeight, window.innerWidth, serverPanelWorkingWidth);
     toggleButton.style.left = serverPanelWorkingWidth + "px";
     tabControls.style.left = x + "px";
     tabControls.style.width = (window.innerWidth - x + 1) + "px";
@@ -56,12 +56,12 @@ const resizePanelHeights = function(){ // control xterm terminal height based on
     const xtermRows = Math.max(1, Math.floor(xtermHeight / xtermCharHeight));
     xterm.resize(xtermCols, xtermRows);    
 }
-const resizePanels = function(){
-    resizePanelWidths();
+const resizePanels = function(skipIpc){
+    resizePanelWidths(skipIpc);
     resizePanelHeights();
 }
 resizePanels();
-window.addEventListener('resize', (event) => resizePanelHeights()); // resizePanelWidths not needed, handled by BrowserView
+window.addEventListener('resize', (event) => resizePanels(true));
 
 /* -----------------------------------------------------------
 activate the button to toggle server-panel visibility, with a bit of animation
