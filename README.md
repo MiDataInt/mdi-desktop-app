@@ -4,7 +4,6 @@ The [Michigan Data Interface](https://midataint.github.io/) (MDI)
 is a framework for developing, installing and running 
 Stage 1 HPC **pipelines** and Stage 2 interactive web applications 
 (i.e., **apps**) in a standardized design interface.
-Collectively, pipelines and apps are known as **tools**.
 
 This is the repository for the **MDI Desktop App**,
 an [Electron](https://www.electronjs.org/) desktop app
@@ -16,6 +15,12 @@ computer.
 
 ### Installation
 
-Please download the relevant binary for your operating system from:
+Please download the relevant installer for your local operating system:
+- [Download for Windows](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe)
+- [Download for Mac](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg)
 
-- <https://github.com/MiDataInt/mdi-desktop-app/releases>
+### Documentation
+
+See the following site for complete documentation of the desktop app:
+
+- <https://midataint.github.io/mdi-desktop-app>

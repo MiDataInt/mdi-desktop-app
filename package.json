@@ -1,6 +1,6 @@
 {
   "name": "mdi-desktop-app",
-  "version": "v0.0.5",
+  "version": "v0.0.6",
   "description": "Electron desktop for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
@@ -27,11 +27,13 @@
     "appId": "MichiganDataInterface.DesktopApp",
     "win": {
       "publish": "github",
+      "artifactName": "${productName}.${ext}",
       "icon": "./assets/logo/mdi-logo_256x256px.png"
     },
     "mac": {
       "publish": "github",
       "icon": "./assets/logo/mdi-logo_512x512px.png",
+      "artifactName": "${productName}.${ext}",
       "category": "public.app-category.utilities"
     }
   }

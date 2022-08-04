@@ -1,6 +1,7 @@
 /* -----------------------------------------------------------
 like preload-main.js, preload-content.js has limited access to Node 
-it provides a conduit from mdi-apps-framework/framework.js to Electron main.js
+it provides a conduit from mdi-apps-framework/framework.js and
+MDI documentation pages to Electron main.js
 ----------------------------------------------------------- */
 const { contextBridge, ipcRenderer } = require('electron');
 const allowedEventTypes = [

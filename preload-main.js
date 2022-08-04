@@ -64,7 +64,6 @@ contextBridge.exposeInMainWorld('mdi', {
 
   // launch a host terminal external to the electron app with an interactive ssh session 
   spawnTerminal: (config) => {
-
     const sshCommand = config.mode == "Local" ? "" : assembleSshCommand(config, false);
     ipcRenderer.send('spawnTerminal', sshCommand)
   },
@@ -236,17 +235,13 @@ const checkCandidatePort = (port) => new Promise((resolve, reject) => {
   server.on('error', reject);
   server.listen(port, () => server.close(() => resolve(port)));
 })
-const getRandomFreeLocalPort = (port) => new Promise((resolve, reject) => { 
-  if(!port) {
-    const searchRange = 1000;
-    const minPort = 1024; 
-    const maxPort = 65535 - searchRange;
-    port = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;    
-  }
+const getRandomFreeLocalPort = () => new Promise((resolve, reject) => { 
+  const minPort = 1024; 
+  const maxPort = 65535;
+  const port = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;    
   return checkCandidatePort(port)
     .then(resolve)
     .catch(() => { // step forward from a random starting port until a free port is found
-      port++;
-      getRandomFreeLocalPort(port).then(resolve);
+      getRandomFreeLocalPort().then(resolve);
     })
 })

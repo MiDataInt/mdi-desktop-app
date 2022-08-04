@@ -118,8 +118,7 @@ const createMainWindow = () => {
     addContentView(tabContents.Docs, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
     activateAppSshTerminal();
     activateServerTerminal();
-    // if(isDev) 
-    mainWindow.webContents.openDevTools({ mode: "detach" });   
+    if(isDev) mainWindow.webContents.openDevTools({ mode: "detach" });   
     activateAutoUpdater();
   });
 };
@@ -535,7 +534,6 @@ const activateAutoUpdater = function(){
   // });
   // autoUpdater.on('update-available', (info) => {
   //   sendAutoUpdate('Update available.');
-  //   sendAutoUpdate(info);
   // })
   // autoUpdater.on('update-not-available', (info) => {
   //   sendAutoUpdate('Update not available.');

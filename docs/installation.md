@@ -14,7 +14,9 @@ interface used to perform data analysis.
 
 ### Install the Desktop App
 
-Details pending.
+Please download the relevant installer for your local operating system:
+- [Download for Windows](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe)
+- [Download for Mac](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg)
 
 ### Install R
 

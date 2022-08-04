@@ -1,11 +1,17 @@
+# GitHub Action to publish mdi-desktop-app _draft_ releases
+# must manually make the release public on GitHub!!
 name: "Electron Builder"
 on:
   push:
     paths:
       - 'package.json' # only release when version changes
-  workflow_dispatch:
+  workflow_dispatch: # also allow manual execution of Action
+
+# give electron-builder permission to publish releases
 env:
   GH_TOKEN: ${{ secrets.github_token }}
+
+# setup OS environments
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
@@ -18,14 +24,19 @@ jobs:
         with:
           node-version: 16
           cache: 'npm'
+
+      # install node modules
       - run: npm clean-install
-      # - run: npm run build # if you need it
+
+      # publish Windows release
       - name: Run npm run release (Windows)
         if: runner.os == 'Windows'
         # env: 
           # CSC_LINK: ${{ secrets.win_certs }}
           # CSC_KEY_PASSWORD: ${{ secrets.win_certs_password }}
         run: npm run release
+
+      # publish Mac release
       - name: Run npm run release (macOS)
         if: runner.os == 'macOS'
         # env: 
