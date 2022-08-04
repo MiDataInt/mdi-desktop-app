@@ -95,7 +95,7 @@ launch the Electron app in the main renderer, i.e., BrowserWindow
 ----------------------------------------------------------- */
 const createMainWindow = () => {
   mainWindow = new BrowserWindow({
-    icon: path.join(__dirname, 'assets/logo/portal_blur.ico'),
+    // icon: path.join(__dirname, 'assets/logo/mdi-logo_256x256px.png'), // electron-builder handles the icon
     width: startWidth,
     height: startHeight,
     useContentSize: true, // thus, number above are the viewport dimensions
@@ -530,46 +530,28 @@ support automatic update via electron-builder and electron-updater
 const sendAutoUpdate = (message) => mainWindow.webContents.send("autoUpdateStatus", message);
 const activateAutoUpdater = function(){
   const { autoUpdater } = require("electron-updater"); 
-  autoUpdater.on('checking-for-update', () => {
-    sendAutoUpdate('Checking for update...');
-  });
-  autoUpdater.on('update-available', (info) => {
-    sendAutoUpdate('Update available.');
-    sendAutoUpdate(info);
-  })
-  autoUpdater.on('update-not-available', (info) => {
-    sendAutoUpdate('Update not available.');
-  });
-  autoUpdater.on('error', (err) => {
-    sendAutoUpdate('Error in auto-updater. ' + err);
-  });
-  autoUpdater.on('download-progress', (progressObj) => {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    sendAutoUpdate(log_message);
-  });
-  autoUpdater.on('update-downloaded', (info) => {
-    sendAutoUpdate('Update downloaded');
-    sendAutoUpdate(info);
-  });
+  // autoUpdater.on('checking-for-update', () => {
+  //   sendAutoUpdate('Checking for update...');
+  // });
+  // autoUpdater.on('update-available', (info) => {
+  //   sendAutoUpdate('Update available.');
+  //   sendAutoUpdate(info);
+  // })
+  // autoUpdater.on('update-not-available', (info) => {
+  //   sendAutoUpdate('Update not available.');
+  // });
+  // autoUpdater.on('error', (err) => {
+  //   sendAutoUpdate('Error in auto-updater. ' + err);
+  // });
+  // autoUpdater.on('download-progress', (progressObj) => {
+  //   let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  //   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+  //   log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  //   sendAutoUpdate(log_message);
+  // });
+  // autoUpdater.on('update-downloaded', (info) => {
+  //   sendAutoUpdate('Update downloaded');
+  //   sendAutoUpdate(info);
+  // });
   autoUpdater.checkForUpdatesAndNotify(); // immediately download an update, install when app quits
 };
-
-// The app doesn't need to listen to any events except `update-downloaded`
-// app.on('ready', function()  {
-//   autoUpdater.checkForUpdates();
-// });
-// autoUpdater.on('checking-for-update', () => {
-// })
-// autoUpdater.on('update-available', (info) => {
-// })
-// autoUpdater.on('update-not-available', (info) => {
-// })
-// autoUpdater.on('error', (err) => {
-// })
-// autoUpdater.on('download-progress', (progressObj) => {
-// })
-// autoUpdater.on('update-downloaded', (info) => {
-//   autoUpdater.quitAndInstall();  
-// })

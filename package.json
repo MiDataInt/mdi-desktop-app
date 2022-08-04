@@ -26,11 +26,12 @@
   "build": {
     "appId": "MichiganDataInterface.DesktopApp",
     "win": {
-      "publish": "github"
+      "publish": "github",
+      "icon": "./assets/logo/mdi-logo_256x256px.png"
     },
     "mac": {
       "publish": "github",
-      "icon": "./assets/logo/portal_blur_512_512_8bit.png",
+      "icon": "./assets/logo/mdi-logo_512x512px.png",
       "category": "public.app-category.utilities"
     }
   }

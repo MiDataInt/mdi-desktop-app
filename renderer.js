@@ -1,9 +1,7 @@
 /* -----------------------------------------------------------
 renderer.js has no access to Node or local system except through preload-main.js contextBridge
 ----------------------------------------------------------- */
-mdi.autoUpdateStatus((event, message) => {
-    console.log(message);
-})
+mdi.autoUpdateStatus((event, message) => console.log);
 
 /* -----------------------------------------------------------
 initialize the xterm terminal window and associated events and data flow
