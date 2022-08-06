@@ -408,15 +408,19 @@ to give users an additional way to explore a server machine while the MDI is run
 const activateServerTerminal = function(){
   const { spawn } = require('child_process');
   ipcMain.on('spawnTerminal', (event, sshCommand) => {
-    if(isWindows){ // 'start' required to create a stable external window
-      const shellCommand = "cmd.exe"; // not powershell
-      if(!sshCommand) sshCommand = shellCommand; // for Local mode
-      spawn(shellCommand, ["/c", "start"].concat(sshCommand));
-    } else {
-      // TODO: handle linux/Mac does this work?
-      // or maybe spawn(shellCommand, ["open", "ssh"].concat(sshArgs));
-      spawn('ssh', sshCommand);
-    }
+    try {
+      if(isWindows){ // 'start' required to create a stable external window
+        const shellCommand = "cmd.exe"; // not powershell
+        if(!sshCommand) sshCommand = shellCommand; // for Local mode
+        spawn(shellCommand, ["/c", "start"].concat(sshCommand));
+      } else {
+        let osaScript = ['-e', 'tell application "Terminal" to activate'];
+        const terminalCommand = sshCommand ?
+          ['-e', 'tell application "Terminal" to do script "' + sshCommand.join(" ") + '"'] : 
+          ['-e', 'tell application "Terminal" to do script ""'];
+        spawn('osascript', osaScript.concat(terminalCommand));
+      }
+    } catch(error) { console.error(error) }
   })  
 }
 
@@ -454,16 +458,16 @@ const getRScript = function(mdi){ // for local MDI calls
   };
 }
 const getRscriptPathDefault = function(){
-  let path = "";
-  if(isWindows){
-    const rootFolder = 'C:\\Program Files\\R';
+  const parsePath_ = function(rootFolder, delimiter, suffix){
+    let path = "";
     if(mod('fs').existsSync(rootFolder)){
       const versions = mod('fs').readdirSync(rootFolder);
-      if(versions.length >= 1) path = rootFolder +  '\\' + versions[versions.length - 1] + '\\bin\\Rscript.exe';
+      if(versions.length >= 1) path = rootFolder + delimiter + versions[versions.length - 1] + suffix;
     }
+    return path;
   }
-  // TODO: parse defaults for Mac
-  return path; 
+  if(isWindows) return(parsePath_('C:\\Program Files\\R', '\\', '\\bin\\Rscript.exe'));
+  return(parsePath_('/Library/Frameworks/R.framework/Versions', '/', '/Resources/bin/Rscript'));
 }
 
 /* -----------------------------------------------------------
