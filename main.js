@@ -451,7 +451,9 @@ const getRScript = function(mdi){ // for local MDI calls
   if(!mod('fs').existsSync(rLibsPath)) mod('fs').mkdirSync(rLibsPath);
   const rLibPath = rLibsPath + hash;
   if(!mod('fs').existsSync(rLibPath)) mod('fs').mkdirSync(rLibPath);
-  const libPaths = ".libPaths(gsub('\\\\', '/', '" + rLibPath + "', fixed = TRUE))"
+  const libPaths = isWindows ? 
+    ".libPaths(gsub('\\\\', '/', '" + rLibPath + "', fixed = TRUE))":
+    ".libPaths('" + rLibPath + "')"
   return {
     target: rScript.replace(/ /g, "' '"), // deal with spaces in names on Windows,
     libPaths: libPaths
