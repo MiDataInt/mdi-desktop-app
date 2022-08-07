@@ -68,7 +68,7 @@ server session. In remote modes, click **Disconnect**
 to end your SSH session. You must disconnect before re-connecting
 to a different server.
 
-You can also just close the desktop app,
+You can also just close/quit the desktop app,
 without using the Stop and Disconnect buttons.
 Any servers and jobs running on remote computers will terminate
 once the SSH connection is dropped. 

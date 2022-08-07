@@ -18,6 +18,9 @@ Please download the relevant installer for your local operating system:
 - [Download for Windows](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe)
 - [Download for Mac](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg)
 
+You may be prompted to confirm the download, installation, or use of the MDI Desktop. Only you can decide whether to proceed. Our project is open source and we abide by our stated
+[MDI Code of Conduct](https://midataint.github.io/docs/registry/00_index/#mdi-developer-code-of-conduct).
+
 ### Install R
 
 The only other software required to use the Desktop App is
