@@ -556,7 +556,7 @@ const addTabDiv = function(tabName){
     const closeTab = document.createElement("span"); // an "X" to close the tab
     closeTab.className = "close-tab";
     closeTab.dataset.index = tabIndex;
-    closeTab.innerHTML = "<strong>x</strong>";
+    closeTab.innerHTML = '<i class="fas fa-times"></i>';
     const tab = document.createElement("div"); // a div as the tab's control target
     tab.className = "contents-tab";
     tab.dataset.index = tabIndex;
