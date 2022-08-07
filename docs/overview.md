@@ -12,10 +12,10 @@ app that makes it easy to configure a connection to the computer
 where you will run the [MDI apps framework](/mdi-apps-framework)
 and to install and run the web server, all from your Windows or Mac computer.
 
-There are other ways to run the apps framework, but the MDI Desktop App
+There are other ways to run the apps framework, but the MDI Desktop
 is recommended as the simplest way to bring all MDI tools to your computer.
 
-### Basic steps for using the desktop app
+### Basic steps for using the MDI Desktop
 
 - **[Install](installation)** the desktop app
 - Select an **[MDI Server Mode](server-modes)**
