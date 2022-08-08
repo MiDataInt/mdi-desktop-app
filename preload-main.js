@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('mdi', {
 
   // enable error and message dialogs via Electron dialog:showMessageBoxSync and electron-prompt
   showMessageBoxSync: (options) => ipcRenderer.send('showMessageBoxSync', options),
+  confirmTerminal: (result) => ipcRenderer.on('confirmTerminal', result),
+  confirmInstall: (result) => ipcRenderer.on('confirmInstall', result),
   confirmDelete: (result) => ipcRenderer.on('confirmDelete', result),
   showPrompt: (options) => ipcRenderer.send("showPrompt", options),
   configurationName: (result) => ipcRenderer.on('configurationName', result),
@@ -158,7 +160,7 @@ const assembleRemoteInstall = function(opt){ // does _not_ depend on remote mode
       ["if [ ! -d", opt.mdiDir, "]; then mkdir -p", opt.mdiDir, "; fi"].join(" "),
       "cd " + opt.mdiDir,
       "if [ ! -e install.sh ]; then git clone https://github.com/MiDataInt/mdi.git .; fi",
-      "if [ ! -e mdi ]; then ./install.sh; fi", // TODO: add "1" to force install?
+      "if [ ! -e mdi ]; then ./install.sh 1; fi",
       "./mdi install --install-packages --n-cpu 4 " + opt.forksFlag
     ]    
   };

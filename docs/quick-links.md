@@ -1,7 +1,7 @@
 ---
 title: Quick Links
 has_children: false
-nav_order: 60
+nav_order: 70
 ---
 
 {% include quick-links.md %}

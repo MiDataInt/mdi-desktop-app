@@ -10,7 +10,7 @@ The MDI Desktop App is a cross-platform
 {% include external-link.html href="https://www.electronjs.org/" text="Electron" %}
 app. The MDI Apps Framework that it launches is an 
 {% include external-link.html href="https://shiny.rstudio.com/" text="R Shiny" %}
-interface used to perform data analysis.
+web interface used to perform data analysis.
 
 ### Install the Desktop App
 
@@ -18,8 +18,12 @@ Please download the relevant installer for your local operating system:
 - [Download for Windows](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe)
 - [Download for Mac](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg)
 
-You may be prompted to confirm the download, installation, or use of the MDI Desktop. Only you can decide whether to proceed. Our project is open source and we abide by our stated
-[MDI Code of Conduct](https://midataint.github.io/docs/registry/00_index/#mdi-developer-code-of-conduct).
+You may be prompted to confirm the download, installation, or use of the MDI Desktop. 
+Only you can decide whether to proceed. Please read the [security notes](security-notes)
+to understand all risks of using the MDI.
+
+Please note that MDI apps, including the Desktop, are cross-platform web tools
+that are not intended to look or feel like a native app on your operating system.
 
 ### Install R
 

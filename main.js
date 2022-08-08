@@ -340,7 +340,7 @@ const activateAppSshTerminal = function(){
           ].join(" "),
           [
             rScript.target, "-e", // install the mdi
-            ["\"" + rScript.libPaths + "; mdi::install('", mdi.opt.mdiDir, "', hostDir = '", mdi.opt.hostDir, "')\""].join("")
+            ["\"" + rScript.libPaths + "; mdi::install('", mdi.opt.mdiDir, "', hostDir = '", mdi.opt.hostDir, "', confirm = FALSE)\""].join("")
           ].join(" ")
         ];
         ptyProcess.write(commands.join("\r") + "\r");
@@ -478,10 +478,10 @@ handle IPC from mdi-apps-framework to Electron
 const allowedExternalUrls = { // exert explicit control over the external sites we support
   Docs:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.io\//, // all other urls/targets are ignored  
   GitHub:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.com\//,
-  Globus:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*globus\.org\//,
+  // Globus:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*globus\.org\//,
   CRAN:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
   RStudio:  /^http[s]*:\/\/[a-zA-Z0-9-_.]*rstudio\.com\//,
-  Electron: /^http[s]*:\/\/[a-zA-Z0-9-_.]*electronjs\.org\//,
+  // Electron: /^http[s]*:\/\/[a-zA-Z0-9-_.]*electronjs\.org\//,
   Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//,
   UMich:    /^http[s]*:\/\/[a-zA-Z0-9-_.]*umich\.edu\//
 };

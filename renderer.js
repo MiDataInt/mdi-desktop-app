@@ -180,9 +180,10 @@ const getConfig = function(commandType, extra){
     mdi.showMessageBoxSync({
         message: "Option '" + check.option + "' is required for " + commandType + " actions.",
         type: "warning",
-        title: "Missing option value"
+        title: "  Missing Option Value"
     });
 };
+/* ---  remote connect/disconnect (approved by logging in) --- */
 sshConnectButton.addEventListener('click', function(event) {
     const config = getConfig('ssh', true);
     if(!config) return;
@@ -195,12 +196,57 @@ sshDisconnectButton.addEventListener('click', function(event) {
     mdi.sshDisconnect();
     xterm.focus();
 });
+/* ---  approve MDI installation, per installation target --- */
+const approvedInstallationsKey = "approved-installations";
+const installServer = function(config){
+    mdi.installServer(config);
+    xterm.focus();      
+}
+mdi.confirmInstall((event, result) => {
+    if(!result) return;
+    const config = getConfig('mdi', 'install');
+    const installationKey = getInstallationKey(config);
+    let approvedInstallations = JSON.parse(localStorage.getItem(approvedInstallationsKey));
+    approvedInstallations[installationKey] = true;
+    localStorage.setItem(approvedInstallationsKey, JSON.stringify(approvedInstallations));
+    installServer(config);
+});
+const getInstallationKey = function(config){
+    let installationKey = config.mode == "Local" ?
+        [
+            config.mode,
+            config.options.regular.mdiDirectoryLocal
+        ] : [
+            config.mode,
+            config.options.regular.serverDomain, 
+            config.options.regular.mdiDirectoryRemote
+        ];
+    return installationKey.join("\n");
+}
 installServerButton.addEventListener('click', function(event) {
     const config = getConfig('mdi', 'install');
-    if(!config) return;
-    mdi.installServer(config);
-    xterm.focus();
+    if(!config) return;    
+    let approvedInstallations = localStorage.getItem(approvedInstallationsKey);
+    if(approvedInstallations) {
+        approvedInstallations = JSON.parse(approvedInstallations);
+    } else {
+        approvedInstallations = {};
+        localStorage.setItem(approvedInstallationsKey, JSON.stringify(approvedInstallations));
+    }
+    const installationKey = getInstallationKey(config);
+    if(approvedInstallations[installationKey]) return installServer(config);
+    mdi.showMessageBoxSync({
+        message: "This action will use R to install the MDI server at:\n\n" + 
+                  installationKey + "\n\n" + 
+                 "Click 'Confirm' to continue.",
+        type: "question",
+        title: "  Confirm Server Installation",
+        buttons: ["Cancel", "Confirm"],
+        noLink: true,
+        mdiEvent: "confirmInstall"
+    });
 });
+/* ---  server start/stop (approved by prior installation) --- */
 startServerButton.addEventListener('click', function(event) {
     const config = getConfig('mdi', 'run');
     if(!config) return;
@@ -212,10 +258,30 @@ stopServerButton.addEventListener('click', function(event) {
     mdi.stopServer(config);
     xterm.focus();
 });
-spawnTerminalButton.addEventListener('click', function(event) {
+/* ---  approve terminal open --- */
+const terminalApprovalKey = "terminal-is-approved";
+const spawnTerminal = function(){
     const config = getConfig('ssh', false);
     if(!config) return;
-    mdi.spawnTerminal(config);
+    mdi.spawnTerminal(config);        
+}
+mdi.confirmTerminal((event, result) => {
+    if(!result) return;
+    localStorage.setItem(terminalApprovalKey, true);
+    spawnTerminal();
+});
+spawnTerminalButton.addEventListener('click', function(event) {
+    if(localStorage.getItem(terminalApprovalKey)) return spawnTerminal();
+    mdi.showMessageBoxSync({
+        message: "This action will open an external Terminal window on your computer.\n\n" + 
+                 "The window will not be part of the Desktop and must be closed separately.\n\n" + 
+                 "Click 'Confirm' to continue.",
+        type: "question",
+        title: "  Confirm Terminal Open",
+        buttons: ["Cancel", "Confirm"],
+        noLink: true,
+        mdiEvent: "confirmTerminal"
+    });
 });
 
 /* -----------------------------------------------------------
@@ -419,7 +485,7 @@ deletePreset.addEventListener("click", function(){
     mdi.showMessageBoxSync({
         message: "Please confirm deletion of configuration '" + current + "'. This cannot be undone.",
         type: "warning",
-        title: "Confirm Deletion",
+        title: "  Confirm Deletion",
         buttons: ["Cancel", "Delete"],
         noLink: true,
         mdiEvent: "confirmDelete"
