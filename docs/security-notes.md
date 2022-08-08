@@ -58,19 +58,21 @@ and execute actions on your computer to allow you to:
 
 The purpose of the MDI Desktop and Apps Framework
 is to run data analysis apps. Unlike the
-Desktop and Framework, the MDI team is not responsible for developing
+Desktop and Framework, the MDI team does not develop
 those apps and does not take responsibility for their contents.
 
 MDI apps run in 
 {% include external-link.html href="https://cran.r-project.org/" text="R" %}, 
-which means that the developers of those
-apps have access to your computer. They can open files and run
-commands on your operating system. _It is therefore imperative that
-you carefully consider whether to trust the authors of any apps you use._
-We recommend that apps you trust follow all 
+which means that they have access to your computer. Apps can open files and run
+commands on your operating system. _It is therefore essential that
+you trust the authors of any apps you use._
+Apps you trust should follow all 
 [MDI security practices](https://midataint.github.io/docs/registry/00_index/), 
 whether or not they are listed in the MDI suite registry.
 
-**PENDING** You will be prompted the first time you use any app
+Contact an app's developer and ask them if you are in doubt. 
+If you cannot identify the developer of an app, don't use it!
+
+You will be prompted the first time you use any app
 to indicate that you have considered the potential risks and agree to
-accept them and continue using the app.
+accept them and continue.
