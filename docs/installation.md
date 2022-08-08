@@ -15,15 +15,18 @@ web interface used to perform data analysis.
 ### Install the Desktop App
 
 Please download the relevant installer for your local operating system:
-- [Download for Windows](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe)
-- [Download for Mac](https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg)
+
+- {% include external-link.html href="https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app-Setup.exe" text="Download for Windows" %}
+- {% include external-link.html href="https://github.com/MiDataInt/mdi-desktop-app/releases/latest/download/mdi-desktop-app.dmg" text="Download for Mac" %}
 
 You may be prompted to confirm the download, installation, or use of the MDI Desktop. 
-Only you can decide whether to proceed. Please read the [security notes](security-notes)
+Please read the [security notes](security-notes)
 to understand all risks of using the MDI.
 
 Please note that MDI apps, including the Desktop, are cross-platform web tools
 that are not intended to look or feel like a native app on your operating system.
+
+The app features an auto-update process, so once installed you should always have the most recent code.
 
 ### Install R
 

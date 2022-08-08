@@ -15,7 +15,7 @@ and to install and run the web server, all from your Windows or Mac computer.
 There are other ways to run the apps framework, but the MDI Desktop
 is recommended as the simplest way to bring all MDI tools to your computer.
 
-### Basic steps for using the desktop app
+### Basic steps for using the MDI Desktop
 
 - **[Install](installation)** the Desktop
 - Select an **[MDI Server Mode](server-modes)**
