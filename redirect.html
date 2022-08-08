@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy">
+    <title>MDI</title>
+    <link href="main.css" rel="stylesheet" />
+    <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+    <link href="assets/font-awesome/css/fontawesome.min.css" rel="stylesheet">
+    <link href="assets/font-awesome/css/solid.min.css" rel="stylesheet">
+  </head>
+  <body class="redirect-body">
+     <script> // a blank page that forwards on to the true external target for a smoother transition
+        const urlParams = new URLSearchParams(location.search);
+        for (const [key, value] of urlParams) {
+            if(key === "url") setTimeout(function() {
+              location = value;
+            }, 0);
+        }
+     </script>
+  </body>
+</html>

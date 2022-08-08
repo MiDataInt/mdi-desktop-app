@@ -115,7 +115,7 @@ const createMainWindow = () => {
 
   // load the app page that allows users to configure and launch their server
   mainWindow.loadFile('main.html').then(() => { // then load/activate additional contents into the app
-    addContentView(tabContents.Docs, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
+    addContentView(tabContents.Docs, false, startHeight, startWidth, contentsStartX); // the MDI documentation tab (index = 0)
     activateAppSshTerminal();
     activateServerTerminal();
     if(isDev) mainWindow.webContents.openDevTools({ mode: "detach" });   
@@ -126,7 +126,7 @@ const createMainWindow = () => {
 /* -----------------------------------------------------------
 attach and fill BrowserViews with app contents, one or more tabs
 ----------------------------------------------------------- */
-const addContentView = function(contents, viewportHeight, viewportWidth, x) {
+const addContentView = function(contents, external, viewportHeight, viewportWidth, x) {
   let bounds = viewportHeight ? {
     x: x,
     width: viewportWidth - x,        
@@ -158,20 +158,29 @@ const addContentView = function(contents, viewportHeight, viewportWidth, x) {
     proxyBypassRules: "127.0.0.1,[::1],localhost"
   }).then(() => {
     retryCount = 0;
-    retryShowContents(activeTabIndex, contents);
+    retryShowContents(activeTabIndex, contents, external);
   }).catch(console.error);
 };
-const retryShowContents = (tabIndex, contents) => new Promise((resolve, reject) => { 
+const retryShowContents = (tabIndex, contents, external) => new Promise((resolve, reject) => { 
   retryCount++;
   if(isDev) console.log("attempt #" + retryCount + " to load " + contents.url + " via proxy " + contents.proxyRules);
-  mainWindow.getBrowserViews()[tabIndex].webContents.loadURL(contents.url + "?mdiRemoteKey=" + mdiRemoteKey()) // send our access key/nonce
-    .then(resolve)
-    .catch((e) => {
-      setTimeout(() => {
-        if(retryCount >= maxRetries) return reject(e);
-        retryShowContents(tabIndex, contents).then(resolve);
-      }, showDelay);
-    });
+  const webContents = mainWindow.getBrowserViews()[tabIndex].webContents;
+  if(external){
+    webContents
+      .loadFile("redirect.html", {query: {url: contents.url }})
+      .then(resolve)
+      .catch(console.error);
+  } else {
+    webContents
+      .loadURL(contents.url + "?mdiRemoteKey=" + mdiRemoteKey()) // send our access key/nonce
+      .then(resolve)
+      .catch((e) => {
+        setTimeout(() => {
+          if(retryCount >= maxRetries) return reject(e);
+          retryShowContents(tabIndex, contents, external).then(resolve);
+        }, showDelay);
+      });    
+  }
 });
 
 /* -----------------------------------------------------------
@@ -181,7 +190,7 @@ const getActiveTab = function(){
   return mainWindow.getBrowserViews()[activeTabIndex]
 }
 const showActiveTab = function(){
-  mainWindow.setTopBrowserView(getActiveTab());
+  setTimeout(() => mainWindow.setTopBrowserView(getActiveTab()), 0);
 }
 ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPanelWidth) => {
   const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
@@ -514,13 +523,13 @@ ipcMain.on("externalLink", (event, data) => {
       if(externalTabIndex[tab]){ // allow exactly one tab per external site
         activeTabIndex = externalTabIndex[tab];
         retryCount = 0;
-        retryShowContents(activeTabIndex, tabContents[tab]).then(() => {
+        retryShowContents(activeTabIndex, tabContents[tab], true).then(() => {
           showActiveTab();
           mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, false);
         }).catch(console.error);
       } else { // first instance of a new external target
         activeTabIndex = mainWindow.getBrowserViews().length;
-        addContentView(tabContents[tab]);
+        addContentView(tabContents[tab], true);
         externalTabIndex[tab] = activeTabIndex;
         mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, true);
       }

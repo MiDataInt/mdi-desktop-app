@@ -15,6 +15,11 @@ body {
     font-size: 15px;
     border-top: 1px solid #888;
 } 
+.redirect-body {
+    width: 100vw;
+    height: 100vh;
+    background-color: #eee;
+}
 #server-panel, #server-panel-toggle, #contents-tab-controls {
     position: absolute;
     top: 0px;    
