@@ -19,8 +19,8 @@ and use, and you bear all responsibility for doing so.
 The MDI Desktop is an 
 {% include external-link.html href="https://github.com/MiDataInt/mdi-desktop-app/" text="open-source project" %}
 maintained by the MDI team to allow you to review its code if desired,
-and we abide by our stated
-{% include external-link.html href="https://midataint.github.io/docs/registry/00_index/#mdi-developer-code-of-conduct/" text="Code of Conduct" %}.
+and we abide by our 
+[Code of Conduct](https://midataint.github.io/docs/registry/00_index/#mdi-developer-code-of-conduct/).
 
 **PENDING** The Desktop app code is properly signed, and, on macOS, 
 notarized, for safe installation and use, so you can trust
@@ -68,8 +68,8 @@ apps have access to your computer. They can open files and run
 commands on your operating system. _It is therefore imperative that
 you carefully consider whether to trust the authors of any apps you use._
 We recommend that apps you trust follow all 
-{% include external-link.html href="https://midataint.github.io/docs/registry/00_index/" text="MDI security practices" %}, whether or
-not they are listed in the MDI suite registry.
+[MDI security practices](https://midataint.github.io/docs/registry/00_index/), 
+whether or not they are listed in the MDI suite registry.
 
 **PENDING** You will be prompted the first time you use any app
 to indicate that you have considered the potential risks and agree to
