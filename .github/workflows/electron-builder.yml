@@ -32,14 +32,17 @@ jobs:
       - name: Run npm run release (Windows)
         if: runner.os == 'Windows'
         # env: 
-          # CSC_LINK: ${{ secrets.win_certs }}
-          # CSC_KEY_PASSWORD: ${{ secrets.win_certs_password }}
+          # CSC_LINK: ${{ secrets.win_csc_link }}
+          # CSC_KEY_PASSWORD: ${{ secrets.win_csc_key_password }}
         run: npm run release
 
       # publish Mac release
       - name: Run npm run release (macOS)
         if: runner.os == 'macOS'
-        # env: 
-          # CSC_LINK: ${{ secrets.mac_certs }}
-          # CSC_KEY_PASSWORD: ${{ secrets.mac_certs_password }}
+        env: 
+          CSC_LINK: ${{ secrets.mac_csc_link }} # for signing
+          CSC_KEY_PASSWORD: ${{ secrets.mac_csc_key_password }}
+          APPLE_ID: ${{ secrets.apple_id }} # for notarization
+          APPLE_ID_PASSWORD: ${{ secrets.apple_id_password }}
+          APPLE_TEAM_ID: ${{ secrets.apple_team_id }}
         run: npm run release

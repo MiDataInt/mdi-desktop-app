@@ -1,6 +1,6 @@
 {
   "name": "mdi-desktop-app",
-  "version": "v0.0.9",
+  "version": "v0.0.10",
   "description": "Electron desktop for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
@@ -14,7 +14,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^19.0.10",
-    "electron-builder": "^23.1.0"
+    "electron-builder": "^23.1.0",
+    "electron-builder-notarize": "^1.5.0"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",
@@ -26,6 +27,7 @@
   "build": {
     "appId": "MichiganDataInterface.DesktopApp",
     "productName": "MDI Desktop",
+    "afterSign": "electron-builder-notarize",
     "win": {
       "publish": "github",
       "artifactName": "${name}-Setup.${ext}",
@@ -33,9 +35,15 @@
     },
     "mac": {
       "publish": "github",
-      "icon": "./assets/logo/mdi-logo_512x512px.png",
       "artifactName": "${name}.${ext}",
-      "category": "public.app-category.utilities"
+      "icon": "./assets/logo/mdi-logo_512x512px.png",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "./node_modules/electron-builder-notarize/entitlements.mac.inherit.plist"
+    },
+    "dmg": {
+      "sign": false
     }
   }
 }
