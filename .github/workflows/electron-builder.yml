@@ -31,9 +31,9 @@ jobs:
       # publish Windows release
       - name: Run npm run release (Windows)
         if: runner.os == 'Windows'
-        # env: 
-          # CSC_LINK: ${{ secrets.win_csc_link }}
-          # CSC_KEY_PASSWORD: ${{ secrets.win_csc_key_password }}
+        env: 
+          CSC_LINK: ${{ secrets.win_csc_link }}
+          CSC_KEY_PASSWORD: ${{ secrets.win_csc_key_password }}
         run: npm run release
 
       # publish Mac release
