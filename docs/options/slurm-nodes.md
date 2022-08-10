@@ -29,10 +29,9 @@ Please consult your group leader for the proper value to use.
 The integer time in minutes you would like your web server to run.
 
 `Job Time Minutes` is the _maximum_ time that the server will run - 
-the server will terminate when you are done using the desktop app
+the server will always terminate when you are done using the desktop app
 to avoid accumulating charges. This option is required by Slurm
-and prevents you from unwittingly launching a server
-that runs perpetually.
+and prevents you from unwittingly launching a server that runs perpetually.
 
 ### CPUs per Task **
 
@@ -40,8 +39,7 @@ The integer number of CPUs you would like assigned
 to your web server job. 
 
 Only 1 CPU is required to run the MDI web server, but you may wish 
-to request 2 CPUs if you will be performing asynchronous tasks
-(recommended). 
+to request 2 CPUs if you will be performing asynchronous tasks (recommended). 
 Only rare users need to request more than 2 CPUs.
 
 ### Memory per CPU **

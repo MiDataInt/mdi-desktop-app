@@ -14,7 +14,7 @@ provide a valid user login and server address.
 ### Username **
 
 Provide the name of a user that has SSH access to the
-computer specified by Server Domain.
+computer specified by `Server Domain`.
 You must possess all credentials required to log into
 the server as this user.
 

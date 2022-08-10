@@ -13,7 +13,7 @@ The following yes/no options determine how your MDI server will start.
 
 If checked, the MDI web server will launch
 in `Developer Mode`, which provides access to powerful
-code development tools within the web interface. 
+code development tools embedded within the web interface. 
 End users should leave this option unchecked.
 
 ### Quick Start

@@ -52,7 +52,7 @@ there reporting its log stream, even when you hide it).
 The MDI Desktop is a minimal web browser. You will
 start with one Docs and one Apps tab. If desired, you can open 
 additional Apps tabs running on the same server. Documentation links
-in the apps load into the Docs tab.
+within the apps will load into the Docs tab.
 
 Please see the documentation of the 
 [MDI Apps Framework](/mdi-apps-framework)
@@ -74,5 +74,5 @@ once the SSH connection is dropped.
 ### Quit the Desktop
 
 Electron apps use significant system resources. You are encouraged to 
-always close all windows, and to quit the app on Mac computers,
+always close all windows, and to fully quit the app on Mac computers,
 when you are done using the MDI Desktop.

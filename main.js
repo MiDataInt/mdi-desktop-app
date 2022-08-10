@@ -298,6 +298,7 @@ const activateAppSshTerminal = function(){
   });
 
   // support dynamic terminal resizing
+  // TODO: this ptyProcess.resize is not getting called as needed, likely on server panel show/hide
   ipcMain.on('xtermResize', (event, size) => ptyProcess.resize(size.cols, size.rows));
 
   // establish data flow between the back-end node-pty pseudo-terminal and the front-end xterm terminal window
