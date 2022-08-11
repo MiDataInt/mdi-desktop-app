@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('mdi', {
   configurationName: (result) => ipcRenderer.on('configurationName', result),
 
   // support dynamic resizing
-  xtermResize: (size) => ipcRenderer.send('xtermResize', size),
+  ptyResize: (size) => ipcRenderer.send('ptyResize', size),
   resizePanelWidths: (viewportHeight, viewportWidth, serverPanelWidth) => {
     ipcRenderer.send('resizePanelWidths', viewportHeight, viewportWidth, serverPanelWidth);
   },
@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('mdi', {
   clearFrameworkContents: () => ipcRenderer.send('clearFrameworkContents'),
   refreshContents: () => ipcRenderer.send('refreshContents'),
   contentsBack: (listening) => ipcRenderer.send('contentsBack', listening),
+  launchExternalTab: (listening) => ipcRenderer.send('launchExternalTab', listening),
   addTab: (viewportHeight, viewportWidth) => ipcRenderer.send('addTab', viewportHeight, viewportWidth),
   selectTab: (tabIndex) => ipcRenderer.send('selectTab', tabIndex),
   closeTab: (tabIndex) => ipcRenderer.send('closeTab', tabIndex),

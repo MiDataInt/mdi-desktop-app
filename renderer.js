@@ -21,7 +21,7 @@ const xterm = new Terminal({
     cursorWidth: 2
 });
 xterm.open(terminalDiv);
-xterm.onResize((size) => mdi.xtermResize(size));
+xterm.onResize((size) => mdi.ptyResize(size));
 xterm.onData((data) => mdi.xtermToPty(data));
 mdi.ptyToXterm((event, data) => { xterm.write(data) });
 let xtermSelected = ""; // enable a dynamic prompt for user to copy selected text from the terminal
@@ -573,6 +573,7 @@ contents BrowserView tab controls
 ----------------------------------------------------------- */
 const refreshContents = document.getElementById('contents-refresh');
 const contentsBack = document.getElementById('contents-back');
+const launchExternalTab = document.getElementById('launch-external-tab');
 const addTab = document.getElementById('add-tab');
 const contentsTabs = document.getElementById('contents-tabs')
 refreshContents.addEventListener("click", () => mdi.refreshContents());
@@ -638,6 +639,9 @@ const addTabDiv = function(tabName){
 addTab.addEventListener("click", () => { // add a new tab
     mdi.addTab(window.innerHeight, window.innerWidth);    
     addTabDiv();
+});
+launchExternalTab.addEventListener("click", () => { // open the current pane in an external browser
+    mdi.launchExternalTab(serverState.listening);
 });
 mdi.showDocumentation((event, url) => { setActiveTab(0) });
 mdi.showExternalLink((event, tabName, tabIndex, addTab) => { 

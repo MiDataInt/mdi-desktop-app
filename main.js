@@ -8,7 +8,7 @@ web content from node.js and other potential security exosures by maintaining
 contextIsolation:true, sandbox:true, and nodeIntegration:false in the client browser.
 ----------------------------------------------------------- */
 // dependencies required to load the main page
-const { app, BrowserWindow, BrowserView, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 app.commandLine.appendSwitch('disable-http-cache');
 // deferred dependencies loaded on demand for faster app loading
@@ -226,6 +226,14 @@ ipcMain.on("contentsBack", (event, listening) => {
      Object.values(externalTabIndex).includes(activeTabIndex)
   ) getActiveTab().webContents.goBack();
 });
+ipcMain.on("launchExternalTab", (event, listening) => {
+  const url = activeTabIndex == 0 || !listening ? tabContents.Docs.url : tabContents.framework.url;
+  if(confirmExternalUrl(url)) shell.openExternal(url + (
+    listening && activeTabIndex > 0 ? 
+    "?mdiRemoteKey=" + mdiRemoteKey() :
+    ""
+  ));
+});
 ipcMain.on("addTab", (event, viewportHeight, viewportWidth) => {
   activeTabIndex = mainWindow.getBrowserViews().length;
   addContentView(tabContents.framework);
@@ -282,6 +290,9 @@ ipcMain.on('showPrompt', (event, options) => {
 /* -----------------------------------------------------------
 activate the in-app node-pty pseudo-terminal that runs the mdi-remote server
 ----------------------------------------------------------- */
+let terminalInitSize = null; // capture early xterm resize before pty is active
+const setInitPtySize = (event, size) => terminalInitSize = size;
+ipcMain.on('ptyResize', setInitPtySize);
 const activateAppSshTerminal = function(){
 
   // open a pseudo-terminal to the local computer's command shell
@@ -298,8 +309,9 @@ const activateAppSshTerminal = function(){
   });
 
   // support dynamic terminal resizing
-  // TODO: this ptyProcess.resize is not getting called as needed, likely on server panel show/hide
-  ipcMain.on('xtermResize', (event, size) => ptyProcess.resize(size.cols, size.rows));
+  ipcMain.on('ptyResize', (event, size) => ptyProcess.resize(size.cols, size.rows));
+  ipcMain.removeListener('ptyResize', setInitPtySize);
+  if(terminalInitSize) ptyProcess.resize(terminalInitSize.cols, terminalInitSize.rows);
 
   // establish data flow between the back-end node-pty pseudo-terminal and the front-end xterm terminal window
   ipcMain.on('xtermToPty',  (event, data) => ptyProcess.write(data));
@@ -489,11 +501,11 @@ const allowedExternalUrls = { // exert explicit control over the external sites 
   Docs:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.io\//, // all other urls/targets are ignored  
   GitHub:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*github\.com\//,
   // Globus:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*globus\.org\//,
-  CRAN:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
-  RStudio:  /^http[s]*:\/\/[a-zA-Z0-9-_.]*rstudio\.com\//,
+  // CRAN:     /^http[s]*:\/\/[a-zA-Z0-9-_.]*cran\.r-project\.org\//,
+  // RStudio:  /^http[s]*:\/\/[a-zA-Z0-9-_.]*rstudio\.com\//,
   // Electron: /^http[s]*:\/\/[a-zA-Z0-9-_.]*electronjs\.org\//,
-  Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//,
-  UMich:    /^http[s]*:\/\/[a-zA-Z0-9-_.]*umich\.edu\//
+  // Google:   /^http[s]*:\/\/[a-zA-Z0-9-_.]*google\.com\//,
+  // UMich:    /^http[s]*:\/\/[a-zA-Z0-9-_.]*umich\.edu\//
 };
 const showDocumentation = function(url){
   if(url.match(allowedExternalUrls.Docs)) {
@@ -534,10 +546,24 @@ ipcMain.on("externalLink", (event, data) => {
         externalTabIndex[tab] = activeTabIndex;
         mainWindow.webContents.send('showExternalLink', tab, activeTabIndex, true);
       }
-      break;
+      return;
     }
   }
+  if(confirmExternalUrl(data.url)) shell.openExternal(data.url);
 });
+const confirmExternalUrl = function(url){
+  return dialog.showMessageBoxSync(
+    mainWindow, 
+    {
+      message: "Do you wish to launch the following site " + 
+               "in your default browser, e.g., Chrome or Safari.\n\n" + url,
+      type: "question",
+      title: "  Launch External Browser",
+      buttons: ["Cancel", "Confirm"],
+      noLink: true
+    }
+  );
+}
 
 /* -----------------------------------------------------------
 support automatic update via electron-builder and electron-updater

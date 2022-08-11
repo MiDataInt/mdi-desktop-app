@@ -104,6 +104,7 @@ body {
     text-shadow: 1px 1px 1px #efefef;
 }
 #add-tab {
+    border-left: 1px solid #888; 
     border-right: 1px solid #888; 
 }
 .close-tab {
