@@ -114,6 +114,8 @@ const setButtonVisibility = function(button, isVisible){
     button.style.display = isVisible ? "inline-block" : "none";
     if(isVisible) serverState.nButtons++;
 }
+let allowExternalTab = true;
+const launchExternalTab = document.getElementById('launch-external-tab');
 const setButtonsVisibility = function(){
     const config = presets[presetSelect.value];
     const isLocal = config.mode == "Local";
@@ -131,6 +133,8 @@ const setButtonsVisibility = function(){
     setButtonVisibility(spawnTerminalButton, terminalIsReady);
     setButtonVisibility(terminalCopy,        terminalIsReady && xtermSelected);
     buttonsHr.style.display = serverState.nButtons > 0 ? "block" : "none";
+    allowExternalTab = !serverState.listening || config.mode !== "Node";
+    launchExternalTab.style.opacity = allowExternalTab ? 1 : 0.2;
     resizePanelHeights();
 }
 const sshRequiredOptions = function(config, createTunnel){
@@ -573,7 +577,6 @@ contents BrowserView tab controls
 ----------------------------------------------------------- */
 const refreshContents = document.getElementById('contents-refresh');
 const contentsBack = document.getElementById('contents-back');
-const launchExternalTab = document.getElementById('launch-external-tab');
 const addTab = document.getElementById('add-tab');
 const contentsTabs = document.getElementById('contents-tabs')
 refreshContents.addEventListener("click", () => mdi.refreshContents());
@@ -641,7 +644,7 @@ addTab.addEventListener("click", () => { // add a new tab
     addTabDiv();
 });
 launchExternalTab.addEventListener("click", () => { // open the current pane in an external browser
-    mdi.launchExternalTab(serverState.listening);
+    if(allowExternalTab) mdi.launchExternalTab(serverState.listening);
 });
 mdi.showDocumentation((event, url) => { setActiveTab(0) });
 mdi.showExternalLink((event, tabName, tabIndex, addTab) => { 

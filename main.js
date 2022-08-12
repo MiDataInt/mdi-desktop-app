@@ -468,10 +468,11 @@ const parseMdiPath = (mdi) => new Promise((resolve, reject) => {
 });
 const getRScript = function(mdi){ // for local MDI calls
   const rScript = mdi.opt.regular.rscriptPath;
-  const hash = mod('crypto').createHash('md5').update(rScript).digest("hex");
+  const version = rScript.match(/\d+\.\d+/)[0];
+  // const hash = mod('crypto').createHash('md5').update(rScript).digest("hex");
   const rLibsPath = mdi.opt.mdiDir + '/library/';
   if(!mod('fs').existsSync(rLibsPath)) mod('fs').mkdirSync(rLibsPath);
-  const rLibPath = rLibsPath + hash;
+  const rLibPath = rLibsPath + "R-" + version; // hash;
   if(!mod('fs').existsSync(rLibPath)) mod('fs').mkdirSync(rLibPath);
   const libPaths = isWindows ? 
     ".libPaths(gsub('\\\\', '/', '" + rLibPath + "', fixed = TRUE))":
