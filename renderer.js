@@ -180,7 +180,12 @@ checkActionReadiness = function(commandType, extra){
 }
 const getConfig = function(commandType, extra){
     const check = checkActionReadiness(commandType, extra);
-    if(check.success) return check.config;
+    if(check.success) {
+        const tail ='/mdi';
+        remoteDir = check.config.options.regular.mdiDirectoryRemote;
+        if(remoteDir && !remoteDir.endsWith(tail)) check.config.options.regular.mdiDirectoryRemote = remoteDir + tail; 
+        return check.config;
+    }
     mdi.showMessageBoxSync({
         message: "Option '" + check.option + "' is required for " + commandType + " actions.",
         type: "warning",
