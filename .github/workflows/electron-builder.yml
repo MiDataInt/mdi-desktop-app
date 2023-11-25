@@ -28,13 +28,13 @@ jobs:
       # install node modules
       - run: npm clean-install
 
-      # # publish Windows release
-      # - name: Run npm run release (Windows)
-      #   if: runner.os == 'Windows'
-      #   env: 
-      #     CSC_LINK: ${{ secrets.win_csc_link }}
-      #     CSC_KEY_PASSWORD: ${{ secrets.win_csc_key_password }}
-      #   run: npm run release
+      # publish Windows release
+      - name: Run npm run release (Windows)
+        if: runner.os == 'Windows'
+        env: 
+          CSC_LINK: ${{ secrets.win_csc_link }}
+          CSC_KEY_PASSWORD: ${{ secrets.win_csc_key_password }}
+        run: npm run release
 
       # publish Mac release
       - name: Run npm run release (macOS)
@@ -46,7 +46,3 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.apple_id_password }}
           APPLE_TEAM_ID: ${{ secrets.apple_team_id }}
         run: npm run release
-        continue-on-error: true
-
-      - run: pwd
-      - run: ls -lah
