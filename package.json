@@ -15,7 +15,8 @@
   "devDependencies": {
     "electron": "^25.9.4",
     "electron-builder": "^24.9.1",
-    "electron-builder-notarize": "^1.5.1"
+    "electron-builder-notarize": "^1.5.1",
+    "node-gyp": "^10.0.1"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",
