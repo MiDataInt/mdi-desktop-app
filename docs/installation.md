@@ -46,3 +46,13 @@ desktop or laptop computer via the link below
 (note that R Studio is not required):
 
 - {% include external-link.html href="https://cran.r-project.org/" text="https://cran.r-project.org/" %}
+
+### Install XQuartz on MacOS
+
+For Mac computers running the MDI in local mode, you will likely need to make X11 available on your system 
+for R plots to appear correctly. Obtain it by installing XQuartz:
+
+- <https://www.xquartz.org/>
+
+XQuartz is needed because X11 is no longer included by default since Mac OS X 10.8.
+Without it, at least some app plots and images will fail to render as expected.

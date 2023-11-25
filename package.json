@@ -13,16 +13,16 @@
   "author": "Thomas E. Wilson",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^19.0.10",
-    "electron-builder": "^23.1.0",
-    "electron-builder-notarize": "^1.5.0"
+    "electron": "^25.9.4",
+    "electron-builder": "^24.9.1",
+    "electron-builder-notarize": "^1.5.1"
   },
   "dependencies": {
     "electron-prompt": "^1.7.0",
-    "electron-updater": "^5.2.1",
+    "electron-updater": "^6.1.7",
     "net": "^1.0.2",
-    "node-pty": "^0.10.1",
-    "xterm": "^4.19.0"
+    "node-pty": "^1.0.0",
+    "xterm": "^5.3.0"
   },
   "build": {
     "appId": "MichiganDataInterface.DesktopApp",
