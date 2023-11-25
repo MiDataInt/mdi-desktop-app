@@ -2,8 +2,6 @@
 preload-main.js has limited access to Node in support of renderer.js as a conduit to main.js
 ----------------------------------------------------------- */
 const { contextBridge, ipcRenderer } = require('electron');
-const net = require('net');
-let mdiPort = 0; // used as both proxy and shiny ports depending on mode
 
 /* -----------------------------------------------------------
 use contextBridge for inter-process communication (IPC)
@@ -42,11 +40,8 @@ contextBridge.exposeInMainWorld('mdi', {
   // establish/terminate an ssh connection to the remote server on user request
   // these actions are only used in remote, not local, server modes
   sshConnect: (config) => {
-    getRandomFreeLocalPort().then((port) => {
-      mdiPort = port;
-      const sshCommand = assembleSshCommand(config, true);
-      ipcRenderer.send('sshConnect', sshCommand);      
-    })
+    const sshCommand = assembleSshCommand(config, true);
+    ipcRenderer.send('sshConnect', sshCommand);      
   },
   sshDisconnect: () => ipcRenderer.send('sshDisconnect'),
 
@@ -58,7 +53,7 @@ contextBridge.exposeInMainWorld('mdi', {
   },
   startServer: (config) => {
     const mdi = assembleMdiCommand(config, 'run');
-    ipcRenderer.send('startServer', mdi, mdiPort);
+    ipcRenderer.send('startServer', mdi);
   },
   stopServer: (config) => {
     ipcRenderer.send('stopServer', config.mode);
@@ -103,10 +98,10 @@ const assembleSshCommand = (config, createTunnel) => {
         config.mode === "Remote" ? 
           // server mode = local port forwarding
           // 127.0.0.1(localhost) here is the destination as interpreted by the server, i.e., is the server
-          ["-L", [mdiPort, "127.0.0.1", mdiPort].join(":")] : 
+          ["-L", ["__mdiPort__", "127.0.0.1", "__mdiPort__"].join(":")] : 
           // node mode = dynamic port forwarding (cluster forwards to node)
           // 127.0.0.1(localhost) here is the user's local computer
-          ["-D", ["127.0.0.1", mdiPort].join(":")] 
+          ["-D", ["127.0.0.1", "__mdiPort__"].join(":")] 
       ) :
       [] // extra connection windows are just simple interactive terminals
     ).
@@ -182,7 +177,7 @@ const assembleRemoteRun = function(opt){ // run command when server mode == remo
       "bash", 
       opt.remoteTarget,
       // arguments required by the target script
-      mdiPort, // R Shiny port, used in local port forward and R process on login node
+      "__mdiPort__", // R Shiny port, used in local port forward and R process on login node
       opt.mdiDir,
       opt.dataDirectory,
       opt.hostDirectory,
@@ -202,9 +197,9 @@ const assembleNodeRun = function(opt){ // run command when server mode == node
       "bash", 
       opt.remoteTarget,
       // arguments required by the target script
-      mdiPort, // proxy port, used in dynamic port forward, for reporting only 
+      "__mdiPort__", // proxy port, used in dynamic port forward, for reporting only 
       opt.rLoadCommand,
-      mdiPort, // R Shiny port, used by R server in worker node process
+      "__mdiPort__", // R Shiny port, used by R server in worker node process
       opt.mdiDir,
       opt.dataDirectory,
       opt.hostDirectory,
@@ -226,25 +221,3 @@ const parseRemoteRunOptions = function(opt){ // convert user inputs into values 
   opt.rLoadCommand = opt.regular.rLoadCommand ? opt.regular.rLoadCommand.replace(/ /g, "~~") : "echo";
   return opt;
 }
-
-/* -----------------------------------------------------------
-return a promise that resolves to a single, random, free local port 
-  this port may or may not be free on the server (but probably is)
-  very rarely, this can result in a local race condition
------------------------------------------------------------ */
-const checkCandidatePort = (port) => new Promise((resolve, reject) => { 
-  const server = net.createServer();
-  server.unref();
-  server.on('error', reject);
-  server.listen(port, () => server.close(() => resolve(port)));
-})
-const getRandomFreeLocalPort = () => new Promise((resolve, reject) => { 
-  const minPort = 1024; 
-  const maxPort = 65535;
-  const port = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;    
-  return checkCandidatePort(port)
-    .then(resolve)
-    .catch(() => { // step forward from a random starting port until a free port is found
-      getRandomFreeLocalPort().then(resolve);
-    })
-})

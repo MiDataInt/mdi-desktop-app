@@ -10,6 +10,7 @@ contextIsolation:true, sandbox:true, and nodeIntegration:false in the client bro
 // dependencies required to load the main page
 const { app, BrowserWindow, BrowserView, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const net = require('net');
 app.commandLine.appendSwitch('disable-http-cache');
 // deferred dependencies loaded on demand for faster app loading
 let mods = {};
@@ -64,6 +65,8 @@ let watch = { // for watching node-pty data streams for triggering events
   event: null,
   data: undefined
 };
+/* ----------------------------------------------------------- */
+let mdiPort = 0; // used as both proxy and shiny ports depending on mode
 
 /* -----------------------------------------------------------
 Electron app windows and flow control, see:
@@ -102,7 +105,8 @@ const createMainWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload-main.js'),
       nodeIntegration: false, // security settings (defaults repeated here for clarity)
-      contextIsolation: true
+      contextIsolation: true,
+      sandbox: true
     },
     autoHideMenuBar: true // we don't need a top menu (File, Edit, etc.)
   });
@@ -136,9 +140,9 @@ const addContentView = function(contents, external, viewportHeight, viewportWidt
   const contentView = new BrowserView({
     webPreferences: {
       preload: path.join(__dirname, 'preload-content.js'),
-      nodeIntegration: false,
-      sandbox: true,
-      contextIsolation: true
+      nodeIntegration: false, // security settings (defaults repeated here for clarity)
+      contextIsolation: true,
+      sandbox: true
     }
   });
   mainWindow.addBrowserView(contentView); // not setBrowserView since we will support multiple tabs
@@ -190,7 +194,10 @@ const getActiveTab = function(){
   return mainWindow.getBrowserViews()[activeTabIndex]
 }
 const showActiveTab = function(){
-  setTimeout(() => mainWindow.setTopBrowserView(getActiveTab()), 0);
+  setTimeout(() => {
+    let tab = getActiveTab();
+    tab === undefined ? showActiveTab() : mainWindow.setTopBrowserView(getActiveTab())
+  }, 100);
 }
 ipcMain.on("resizePanelWidths", (event, viewportHeight, viewportWidth, serverPanelWidth) => {
   const x = serverPanelWidth + toggleButtonWidth - 2; // as above, don't know why the -2 is needed
@@ -337,8 +344,12 @@ const activateAppSshTerminal = function(){
   // establish/terminate an ssh connection to the remote server on user request
   // these actions are only used in remote, not local, server modes
   ipcMain.on('sshConnect', (event, sshCommand) => {
-    ptyProcess.write(sshCommand.join(" ") + "\r");
-    mainWindow.webContents.send("connectedState", {connected: true}); // TODO: smarter way to know whether connection was successful?
+    sshCommand = sshCommand.join(" ") + "\r";
+    getRandomFreeLocalPort().then((port) => {
+      mdiPort = port;
+      ptyProcess.write(sshCommand.replaceAll("__mdiPort__", port));
+      mainWindow.webContents.send("connectedState", {connected: true}); // TODO: smarter way to know whether connection was successful?  
+    })
   });
   ipcMain.on('sshDisconnect', (event) => {
     ptyProcess.write("\r" + "exit" + "\r\r"); // sometimes need to subsequently type Ctrl-C in terminal window (but not here)
@@ -371,7 +382,7 @@ const activateAppSshTerminal = function(){
       ptyProcess.write(mdi.commands.join("; ") + "\r");
     }
   });  
-  ipcMain.on('startServer', (event, mdi, mdiPort) => {
+  ipcMain.on('startServer', (event, mdi) => {
     watch = {
       buffer: "",
       for: mdi.mode == "Node" ?
@@ -408,7 +419,8 @@ const activateAppSshTerminal = function(){
     } else { // remote modes sent as a mdi command sequence set by preload-main.js
       ptyProcess.write("export MDI_IS_ELECTRON=TRUE\r"); // let mdi-apps-framework known they are running in Electron
       ptyProcess.write("export MDI_REMOTE_KEY=" + mdiRemoteKey() + "\r");
-      ptyProcess.write(mdi.command.join(" ") + "\r");
+      let mdiCommand = mdi.command.join(" ") + "\r";
+      ptyProcess.write(mdiCommand.replaceAll("__mdiPort__", mdiPort));
     }
   });  
   ipcMain.on('stopServer', (event, mode) => {
@@ -423,6 +435,28 @@ const activateAppSshTerminal = function(){
   });  
 }
 
+/* -----------------------------------------------------------
+support port discovery for making ssh connections in terminal
+return a promise that resolves to a single, random, free local port 
+  this port may or may not be free on the server (but probably is)
+  very rarely, this can result in a local race condition
+----------------------------------------------------------- */
+const checkCandidatePort = (port) => new Promise((resolve, reject) => { 
+  const server = net.createServer();
+  server.unref();
+  server.on('error', reject);
+  server.listen(port, () => server.close(() => resolve(port)));
+})
+const getRandomFreeLocalPort = () => new Promise((resolve, reject) => { 
+  const minPort = 1024; 
+  const maxPort = 65535;
+  const port = Math.floor(Math.random() * (maxPort - minPort) ) + minPort;    
+  return checkCandidatePort(port)
+    .then(resolve)
+    .catch(() => { // step forward from a random starting port until a free port is found
+      getRandomFreeLocalPort().then(resolve);
+    })
+})
 /* -----------------------------------------------------------
 launch a host terminal external to the electron app with an interactive [ssh] session 
 to give users an additional way to explore a server machine while the MDI is running
