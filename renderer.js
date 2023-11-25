@@ -376,6 +376,7 @@ toggleAdvanced.addEventListener('click', function(){
 const modeRadios = document.serverMode.mode;
 for (const modeRadio of modeRadios) {
     modeRadio.addEventListener('change', function(){
+        presets.working = presets[presetSelect.value]; // since setServerMode changes to Working
         setServerMode(this.value);
     });
 }
