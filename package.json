@@ -1,6 +1,6 @@
 {
   "name": "mdi-desktop-app",
-  "version": "v0.1.2",
+  "version": "v0.2.0",
   "description": "Electron desktop for the Michigan Data Interface apps framework",
   "main": "main.js",
   "scripts": {
