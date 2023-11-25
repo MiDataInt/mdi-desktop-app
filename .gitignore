@@ -1,3 +1,6 @@
+# Mac folder attributes
+.DS_Store
+
 # Logs
 logs
 *.log

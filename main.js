@@ -57,7 +57,7 @@ const maxRetries = 10;
 let retryCount = 0;
 /* ----------------------------------------------------------- */
 const isWindows = process.platform.toLowerCase().startsWith("win");
-const shellCommand = isWindows ? 'powershell.exe' : 'bash';
+const shellCommand = isWindows ? 'powershell.exe' : 'zsh';
 let fsDelimiter = isWindows ? "\\" : "/";
 let watch = { // for watching node-pty data streams for triggering events
   buffer: "",
@@ -114,7 +114,7 @@ const createMainWindow = () => {
   // set the app title bar based on server mode
   ipcMain.on('setTitle', (event, mode, connection) => {
     const connectedTo = connection ? (" - " + connection.server) : ""; 
-    BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + mode + connectedTo);
+    BrowserWindow.fromWebContents(event.sender).setTitle("MDI " + app.getVersion()  + " " + mode + connectedTo);
   });
 
   // load the app page that allows users to configure and launch their server
@@ -484,6 +484,8 @@ const activateServerTerminal = function(){
 MDI local file path utility functions
 ----------------------------------------------------------- */
 const parseMdiPath = (mdi) => new Promise((resolve, reject) => { 
+  // resolve ~ to HOME
+  mdi.opt.mdiDir = mdi.opt.mdiDir.replace("~/", process.env.HOME + "/");
   // if missing, add '/mdi' to MDI Directory
   const tail ='/mdi';
   if(!mdi.opt.mdiDir.endsWith(tail)) mdi.opt.mdiDir = mdi.opt.mdiDir + tail;  
